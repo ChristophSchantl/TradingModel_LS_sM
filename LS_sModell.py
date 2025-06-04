@@ -331,11 +331,11 @@ start_date_input = st.date_input(
 
 start_capital_input = st.number_input(
     label="3️⃣ Startkapital (€)",
-    value=10000.0,
-    min_value=1000.0,
-    step=500.0,
-    format="%.2f",
-    help="Gib das Startkapital in Euro ein (ab € 1.000)."
+    value=10000,       # als Integer
+    min_value=1000,    # ebenfalls Integer
+    step=500,          # Schrittweite in ganzen Euro
+    format="%d",       # zeigt keine Dezimalstellen an
+    help="Gib das Startkapital in ganzen Euro ein (ab € 1.000)."
 )
 
 st.markdown("---")
@@ -352,7 +352,7 @@ if run_button:
     else:
         start_date_str = start_date_input.strftime("%Y-%m-%d")
         with st.spinner("⏳ Berechne Optimierung und Trades… bitte einen Moment warten"):
-            results = optimize_and_run(ticker_input, start_date_str, start_capital_input)
+            results = optimize_and_run(ticker_input, start_date_str, float(start_capital_input))
 
         trades_df = results["trades_df"]
         strategy_return = results["strategy_return"]
