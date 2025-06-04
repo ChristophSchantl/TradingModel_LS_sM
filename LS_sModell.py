@@ -307,7 +307,7 @@ def optimize_and_run(ticker: str, start_date_str: str):
 # ---------------------------------------
 # Streamlit-App
 # ---------------------------------------
-st.title("📊 Trading Model – Long Short")
+st.title("📊 Trading Model – LS25")
 
 st.markdown("""
 Bitte wähle unten den Ticker und den Beginn des Zeitraums aus.  
