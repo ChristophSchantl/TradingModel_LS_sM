@@ -14,11 +14,11 @@ warnings.filterwarnings("ignore")
 # Funktion, die im Hintergrund Optimierung und Trading ausführt
 # ---------------------------------------
 @st.cache_data(show_spinner=False)
-def optimize_and_run(ticker: str, start_date_str: str):
+def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     """
     Lädt Kursdaten für den gegebenen Ticker und Start-Datum (bis heute),
     führt die MA-Optimierung per GA durch, rundet die MA-Fenster, simuliert das Trading
-    und gibt alle relevanten Ergebnisse zurück.
+    und gibt alle relevanten Ergebnisse zurück. Der Startbetrag wird durch start_capital festgelegt.
     """
     # 1. Datenbeschaffung und -aufbereitung
     end_date_str = datetime.now().strftime('%Y-%m-%d')
@@ -38,7 +38,7 @@ def optimize_and_run(ticker: str, start_date_str: str):
         df.dropna(inplace=True)
 
         position = 0
-        wealth_line = [10000]
+        wealth_line = [start_capital]
         cumulative_pnl = 0
 
         for i in range(1, len(df)):
@@ -118,7 +118,7 @@ def optimize_and_run(ticker: str, start_date_str: str):
 
     position = 0
     initial_price = None
-    wealth = 10000
+    wealth = start_capital
     cumulative_pnl = 0
     trades = []
     positionswert = 0
@@ -248,8 +248,8 @@ def optimize_and_run(ticker: str, start_date_str: str):
 
     trades_df = pd.DataFrame(trades)
 
-    # Renditen berechnen
-    strategy_return = (wealth - 10000) / 10000 * 100
+    # Renditen berechnen (jetzt relativ zum start_capital)
+    strategy_return = (wealth - start_capital) / start_capital * 100
     buy_and_hold_return = (data_vis['Close'].iloc[-1] - data_vis['Close'].iloc[0]) / data_vis['Close'].iloc[0] * 100
 
     # Statistik zu positiven/negativen Trades
@@ -310,11 +310,11 @@ def optimize_and_run(ticker: str, start_date_str: str):
 st.title("📊 Trading Model – LS25")
 
 st.markdown("""
-Bitte wähle unten den Ticker und den Beginn des Zeitraums aus.  
+Bitte wähle unten den Ticker, den Beginn des Zeitraums und das Startkapital aus.  
 """)
 
 # ------------------------------
-# Eingabefelder für Ticker / Zeitfenster
+# Eingabefelder für Ticker / Zeitfenster / Startkapital
 # ------------------------------
 ticker_input = st.text_input(
     label="1️⃣ Welchen Aktien-Ticker möchtest du analysieren?",
@@ -327,6 +327,15 @@ start_date_input = st.date_input(
     value=date(2024, 1, 1),
     max_value=date.today(),
     help="Wähle das Startdatum (bis heute)."
+)
+
+start_capital_input = st.number_input(
+    label="3️⃣ Startkapital (€)",
+    value=10000.0,
+    min_value=1000.0,
+    step=500.0,
+    format="%.2f",
+    help="Gib das Startkapital in Euro ein (ab € 1.000)."
 )
 
 st.markdown("---")
@@ -343,7 +352,7 @@ if run_button:
     else:
         start_date_str = start_date_input.strftime("%Y-%m-%d")
         with st.spinner("⏳ Berechne Optimierung und Trades… bitte einen Moment warten"):
-            results = optimize_and_run(ticker_input, start_date_str)
+            results = optimize_and_run(ticker_input, start_date_str, start_capital_input)
 
         trades_df = results["trades_df"]
         strategy_return = results["strategy_return"]
@@ -436,7 +445,7 @@ if run_button:
         """)
 
         # ---------------------------------------
-        # 3. Tabelle der Einzelt﻿rades
+        # 3. Tabelle der Einzeltrades
         # ---------------------------------------
         st.subheader("3. Tabelle der Einzeltrades")
         trades_table = trades_df[['Datum', 'Typ', 'Kurs', 'Profit/Loss', 'Kumulative P&L']].copy()
@@ -447,7 +456,7 @@ if run_button:
         st.dataframe(trades_table, use_container_width=True)
 
         # ---------------------------------------
-        # 4. Statistiken zu Trades
+        # 4. Handelsstatistiken
         # ---------------------------------------
         st.subheader("4. Handelsstatistiken")
 
@@ -519,4 +528,3 @@ if run_button:
         ax_counts.set_title("Trade-Einträge-Verteilung", fontsize=14)
         ax_counts.grid(axis='y', linestyle='--', alpha=0.5)
         st.pyplot(fig_counts)
-
