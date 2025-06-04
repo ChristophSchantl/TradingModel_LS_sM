@@ -336,8 +336,9 @@ if st.button("🔄 Ergebnisse neu laden"):
 # überführe das Datum in einen String „YYYY-MM-DD“
 start_date_str = start_date_input.strftime("%Y-%m-%d")
 
-# Ergebnisse aus der Hintergrund-Funktion holen
-results = optimize_and_run(ticker_input, start_date_str)
+# Spinner anzeigen, während optimize_and_run rechnet
+with st.spinner("⏳ Berechne Optimierung und Trades… bitte einen Moment warten"):
+    results = optimize_and_run(ticker_input, start_date_str)
 
 trades_df = results["trades_df"]
 strategy_return = results["strategy_return"]
