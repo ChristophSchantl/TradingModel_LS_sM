@@ -260,14 +260,20 @@ def optimize_and_run(ticker: str, start_date_str: str):
     neg_count = len(neg_trades)
     pos_pnl = pos_trades['Profit/Loss'].sum()
     neg_pnl = neg_trades['Profit/Loss'].sum()
+
+    # Gesamtzahl der Zeilen (Entry + Exit)
     total_trades = len(trades_df)
-    long_trades = len(trades_df[trades_df['Typ'].str.contains("Kauf")])
-    short_trades = len(trades_df[trades_df['Typ'].str.contains("Short")])
-    if total_trades > 0:
-        pos_pct = pos_count / total_trades * 100
-        neg_pct = neg_count / total_trades * 100
+
+    # Anzahl aller tatsächlich abgeschlossenen Exit-Trades
+    closed_trades = pos_count + neg_count
+
+    # Korrekte Prozentberechnung: nur auf abgeschlossene Trades bezogen
+    if closed_trades > 0:
+        pos_pct = pos_count / closed_trades * 100
+        neg_pct = neg_count / closed_trades * 100
     else:
         pos_pct = neg_pct = 0
+
     total_pnl = pos_pnl + neg_pnl
     if total_pnl != 0:
         pos_perf = pos_pnl / total_pnl * 100
@@ -284,8 +290,8 @@ def optimize_and_run(ticker: str, start_date_str: str):
         "strategy_return": float(strategy_return),
         "buy_and_hold_return": float(buy_and_hold_return),
         "total_trades": total_trades,
-        "long_trades": long_trades,
-        "short_trades": short_trades,
+        "long_trades": len(trades_df[trades_df['Typ'].str.contains("Kauf")]),
+        "short_trades": len(trades_df[trades_df['Typ'].str.contains("Short")]),
         "pos_count": pos_count,
         "neg_count": neg_count,
         "pos_pct": pos_pct,
@@ -302,7 +308,7 @@ def optimize_and_run(ticker: str, start_date_str: str):
 # ---------------------------------------
 # Streamlit-App
 # ---------------------------------------
-st.title("📊 Trading Model - Long Short")
+st.title("📊 Trading Model – Long Short")
 
 st.markdown("""
 Bitte wähle unten den Ticker und den Beginn des Zeitraums aus.  
@@ -311,14 +317,12 @@ Bitte wähle unten den Ticker und den Beginn des Zeitraums aus.
 # ------------------------------
 # Eingabefelder für Ticker / Zeitfenster
 # ------------------------------
-# 1) Textfeld für den Ticker
 ticker_input = st.text_input(
     label="1️⃣ Welchen Aktien-Ticker möchtest du analysieren?",
     value="O",  # Standardwert
     help="Gib hier das Tickersymbol ein, z.B. 'AAPL', 'MSFT' oder 'O'."
 )
 
-# 2) Datumsauswahl für den Startzeitpunkt
 start_date_input = st.date_input(
     label="2️⃣ Beginn des Analyse-Zeitraums",
     value=date(2024, 1, 1),
@@ -432,9 +436,9 @@ st.subheader("4. Handelsstatistiken")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.metric("Gesamtzahl der Trades", total_trades)
-    st.metric("Davon Long-Trades", long_trades)
-    st.metric("Davon Short-Trades", short_trades)
+    st.metric("Gesamtzahl der Einträge (Entry+Exit)", total_trades)
+    st.metric("Davon Long-Trades (gerade Zeilen)", long_trades)
+    st.metric("Davon Short-Trades (gerade Zeilen)", short_trades)
 
 with col2:
     st.metric("Positive Trades (Anzahl)", pos_count)
@@ -453,15 +457,15 @@ st.markdown(f"""
 # ---------------------------------------
 # 5. Balkendiagramm: Anzahl der Trades
 # ---------------------------------------
-st.subheader("5. Anzahl der Trades (gesamt, Long, Short)")
+st.subheader("5. Anzahl der Trades (Entry+Exit, Long, Short)")
 fig_counts, ax_counts = plt.subplots(figsize=(6, 4))
 ax_counts.bar(
-    ['Gesamt', 'Long', 'Short'],
+    ['Einträge gesamt', 'Long-Einträge', 'Short-Einträge'],
     [total_trades, long_trades, short_trades],
     color=['#4c72b0', '#55a868', '#c44e52'],
     alpha=0.8
 )
 ax_counts.set_ylabel("Anzahl", fontsize=12)
-ax_counts.set_title("Trade-Verteilung", fontsize=14)
+ax_counts.set_title("Trade-Einträge-Verteilung", fontsize=14)
 ax_counts.grid(axis='y', linestyle='--', alpha=0.5)
 st.pyplot(fig_counts)
