@@ -319,7 +319,7 @@ Bitte wähle unten den Ticker und den Beginn des Zeitraums aus.
 # ------------------------------
 ticker_input = st.text_input(
     label="1️⃣ Welchen Aktien-Ticker möchtest du analysieren?",
-    value="O",  # Standardwert
+    value="",  # Standardwert
     help="Gib hier das Tickersymbol ein, z.B. 'AAPL', 'MSFT' oder 'O'."
 )
 
