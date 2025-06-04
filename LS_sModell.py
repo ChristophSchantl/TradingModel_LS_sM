@@ -367,16 +367,31 @@ if run_button:
         # ---------------------------------------
         st.subheader("1. Performance-Vergleich")
         fig_performance, ax_perf = plt.subplots(figsize=(8, 5))
-        ax_perf.bar(
+        
+        # Balken zeichnen
+        bars = ax_perf.bar(
             ['Strategie', 'Buy & Hold'],
             [strategy_return, buy_and_hold_return],
             color=['#1f77b4', '#ff7f0e'],
             alpha=0.8
         )
+        
+        # Prozentwerte über die Balken schreiben
+        for bar in bars:
+            height = bar.get_height()
+            ax_perf.text(
+                bar.get_x() + bar.get_width() / 2,  # x-Position in der Mitte des Balkens
+                height,                              # y-Position genau auf dem Balken
+                f"{height:.2f}%",                    # Beschriftung
+                ha='center',                         # horizontal zentriert
+                va='bottom'                          # vertikal direkt über dem Balken
+            )
+        
         ax_perf.set_ylabel("Rendite (%)", fontsize=12)
         ax_perf.set_title(f"Strategie vs. Buy-&-Hold für {ticker_input}", fontsize=14)
         ax_perf.grid(axis='y', linestyle='--', alpha=0.5)
         st.pyplot(fig_performance)
+
 
         # ---------------------------------------
         # 2. Kursdiagramm mit Kauf-/Verkaufsphasen
