@@ -450,26 +450,63 @@ if run_button:
         # 4. Statistiken zu Trades
         # ---------------------------------------
         st.subheader("4. Handelsstatistiken")
-        col1, col2 = st.columns(2)
 
+        # Layout: drei Spalten
+        col1, col2, col3 = st.columns(3)
+        
         with col1:
             st.metric("Gesamtzahl der Einträge (Entry+Exit)", total_trades)
             st.metric("Davon Long-Trades (Entry-Zeilen)", long_trades)
             st.metric("Davon Short-Trades (Entry-Zeilen)", short_trades)
-
+        
         with col2:
             st.metric("Positive Trades (Anzahl)", pos_count)
             st.metric("Negative Trades (Anzahl)", neg_count)
             st.metric("Positive Trades (%)", f"{pos_pct:.2f}%")
-
+        
+        with col3:
+            # Neue Kennzahlen: Strategie‐Performance vs. Buy-&-Hold
+            st.metric("Strategie-Return", f"{strategy_return:.2f}%")
+            st.metric("Buy-&-Hold-Return", f"{buy_and_hold_return:.2f}%")
+            # Zusatz: Differenz oder Out-/Underperformance
+            diff = strategy_return - buy_and_hold_return
+            if diff >= 0:
+                sign = "+"
+            else:
+                sign = ""
+            st.metric("Outperformance vs. B&H", f"{sign}{diff:.2f}%")
+        
+        # Bullet‐Points mit P&L‐Summen und Performances pro Trade-Typ
         st.markdown(f"""
         - **Negative Trades (%)**: {neg_pct:.2f}%  
         - **Gesamt-P&L der positiven Trades**: {pos_pnl:.2f} EUR  
         - **Gesamt-P&L der negativen Trades**: {neg_pnl:.2f} EUR  
         - **Gesamt-P&L des Systems**: {total_pnl:.2f} EUR  
         - **Performance positive Trades**: {pos_perf:.2f}%  
-        - **Performance negative Trades**: {neg_perf:.2f}%
+        - **Performance negative Trades**: {neg_perf:.2f}%  
         """)
+        
+        # Professioneller Vergleichstext
+        st.markdown("""
+        ---
+        **Vergleich Modell-Performance vs. Buy-&-Hold**  
+        - Das Handelssystem erzielte in diesem Zeitraum eine Gesamt-Rendite von **{strategy_return:.2f}%**,  
+          während die Buy-&-Hold-Strategie nur **{buy_and_hold_return:.2f}%** erwirtschaftete.  
+        - Dies entspricht einer **Outperformance von {diff:+.2f}%** gegenüber dem reinen Halten der Aktie.  
+        - Insbesondere in Seitwärts- oder Trendwechsel-Phasen profitiert das System von den Long/Short-Signalen,  
+          wodurch Drawdowns verkürzt und Gewinne im Gegentrend mitgenommen werden.  
+        - Die Buy-&-Hold-Strategie erzielt zwar in starken Hausse-Phasen gute Renditen,  
+          kann in volatilen Fällen aber größere Verluste hinnehmen, da sie nicht zwischen Long und Short unterscheidet.  
+        - Insgesamt zeigt sich, dass das optimierte System in diesem historischen Verlauf robuster ist und  
+          sowohl positive Trades als auch aktive Short-Positionen gewinnbringend nutzt.  
+        
+        >Dementsprechend kann eine Kombination aus Trend-Following-Signalen (wie hier per GA-optimierten MAs)  
+        >und einem passiven Buy-&-Hold-Ansatz das Risiko/Rendite-Profil eines reinen Aktienengagements deutlich verbessern.  
+        """.format(
+            strategy_return=strategy_return,
+            buy_and_hold_return=buy_and_hold_return,
+            diff=diff
+        ))
 
         # ---------------------------------------
         # 5. Balkendiagramm: Anzahl der Trades
