@@ -1,11 +1,9 @@
-
-
 import streamlit as st
 import yfinance as yf
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, date
 from deap import base, creator, tools, algorithms
 import random
 import warnings
@@ -16,12 +14,15 @@ warnings.filterwarnings("ignore")
 # Funktion, die im Hintergrund Optimierung und Trading ausführt
 # ---------------------------------------
 @st.cache_data(show_spinner=False)
-def optimize_and_run():
+def optimize_and_run(ticker: str, start_date_str: str):
+    """
+    Lädt Kursdaten für den gegebenen Ticker und Start-Datum (bis heute),
+    führt die MA-Optimierung per GA durch, rundet die MA-Fenster, simuliert das Trading
+    und gibt alle relevanten Ergebnisse zurück.
+    """
     # 1. Datenbeschaffung und -aufbereitung
-    ticker = "O"
-    start_date = "2024-01-01"
-    end_date = datetime.now().strftime('%Y-%m-%d')
-    data = yf.download(ticker, start=start_date, end=end_date)
+    end_date_str = datetime.now().strftime('%Y-%m-%d')
+    data = yf.download(ticker, start=start_date_str, end=end_date_str)
     data['Close'] = data['Close'].interpolate(method='linear')
     data['Log_Returns'] = np.log(data['Close'] / data['Close'].shift(1))
     data.dropna(inplace=True)
@@ -29,6 +30,7 @@ def optimize_and_run():
     # 2. Fitness-Funktion für den GA
     def evaluate_strategy(individual):
         ma_short_window, ma_long_window = int(individual[0]), int(individual[1])
+        # Ungültige Kombinationen werden ausgeschlossen
         if ma_short_window >= ma_long_window or ma_short_window <= 0 or ma_long_window <= 0:
             return -np.inf,
         df = data.copy()
@@ -47,6 +49,7 @@ def optimize_and_run():
             ma_s_y = float(df['MA_short'].iloc[i - 1])
             ma_l_y = float(df['MA_long'].iloc[i - 1])
 
+            # Long-Strategie
             if ma_s_t > ma_l_t and ma_s_y <= ma_l_y:
                 if position == -1:
                     pnl = (trade_price - price_today) / trade_price * wealth_line[-1]
@@ -55,6 +58,8 @@ def optimize_and_run():
                 if position != 1:
                     position = 1
                     trade_price = price_today
+
+            # Short-Strategie
             elif ma_s_t < ma_l_t and ma_s_y >= ma_l_y:
                 if position == 1:
                     pnl = (price_today - trade_price) / trade_price * wealth_line[-1]
@@ -63,6 +68,8 @@ def optimize_and_run():
                 if position != -1:
                     position = -1
                     trade_price = price_today
+
+            # Position halten
             else:
                 wealth_line.append(wealth_line[-1])
 
@@ -81,8 +88,13 @@ def optimize_and_run():
 
     toolbox = base.Toolbox()
     toolbox.register("attr_int", random.randint, 5, 50)
-    toolbox.register("individual", tools.initCycle, creator.Individual,
-                     (toolbox.attr_int, toolbox.attr_int), n=1)
+    toolbox.register(
+        "individual",
+        tools.initCycle,
+        creator.Individual,
+        (toolbox.attr_int, toolbox.attr_int),
+        n=1
+    )
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("evaluate", evaluate_strategy)
     toolbox.register("mate", tools.cxBlend, alpha=0.5)
@@ -127,7 +139,7 @@ def optimize_and_run():
         ma_l_y = float(data_vis['MA_long'].iloc[i - 1])
         date = data_vis.index[i]
 
-        # Kaufsignal
+        # Kaufsignal (Long eröffnen)
         if ma_s_t > ma_l_t and ma_s_y <= ma_l_y and position == 0:
             initial_price = price_today
             position = 1
@@ -162,7 +174,7 @@ def optimize_and_run():
                 'Kumulative P&L': cumulative_pnl
             })
 
-        # Short-Signal
+        # Short-Signal (Short eröffnen)
         if ma_s_t < ma_l_t and ma_s_y >= ma_l_y and position == 0:
             initial_price = price_today
             position = -1
@@ -290,19 +302,43 @@ def optimize_and_run():
 # ---------------------------------------
 # Streamlit-App
 # ---------------------------------------
-st.title("📊 Trading-Analyse (versteckte MA-Optimierung)")
+st.title("📊 Trading Model - Long Short")
 
 st.markdown("""
-Die Optimierung der gleitenden Durchschnitte läuft im Hintergrund.  
-Unten siehst du die Ergebnisse: Gesamt-Performance, Buy-&-Hold-Vergleich, Handelsdiagramm mit Kauf-/Verkaufsphasen, einzelne Trades und Statistiken.
+Bitte wähle unten den Ticker und den Beginn des Zeitraums aus.  
+Die optimierten gleitenden Durchschnitte (MA) werden im Hintergrund berechnet, du siehst nur die Endergebnisse.
 """)
+
+# ------------------------------
+# Eingabefelder für Ticker / Zeitfenster
+# ------------------------------
+# 1) Textfeld für den Ticker
+ticker_input = st.text_input(
+    label="1️⃣ Welchen Aktien-Ticker möchtest du analysieren?",
+    value="O",  # Standardwert
+    help="Gib hier das Tickersymbol ein, z.B. 'AAPL', 'MSFT' oder 'O'."
+)
+
+# 2) Datumsauswahl für den Startzeitpunkt
+start_date_input = st.date_input(
+    label="2️⃣ Beginn des Analyse-Zeitraums",
+    value=date(2024, 1, 1),
+    max_value=date.today(),
+    help="Wähle das Startdatum (bis heute)."
+)
+
+st.markdown("---")
 
 # Button, um die Berechnung manuell anzustoßen (Cache verhindert erneutes Laufen)
 if st.button("🔄 Ergebnisse neu laden"):
     st.cache_data.clear()
 
+# überführe das Datum in einen String „YYYY-MM-DD“
+start_date_str = start_date_input.strftime("%Y-%m-%d")
+
 # Ergebnisse aus der Hintergrund-Funktion holen
-results = optimize_and_run()
+results = optimize_and_run(ticker_input, start_date_str)
+
 trades_df = results["trades_df"]
 strategy_return = results["strategy_return"]
 buy_and_hold_return = results["buy_and_hold_return"]
@@ -332,7 +368,7 @@ ax_perf.bar(
     alpha=0.8
 )
 ax_perf.set_ylabel("Rendite (%)", fontsize=12)
-ax_perf.set_title("Strategie vs. Buy-&-Hold", fontsize=14)
+ax_perf.set_title(f"Strategie vs. Buy-&-Hold für {ticker_input}", fontsize=14)
 ax_perf.grid(axis='y', linestyle='--', alpha=0.5)
 st.pyplot(fig_performance)
 
@@ -366,7 +402,7 @@ if current_phase == 1:
 elif current_phase == -1:
     ax_trades.axvspan(start_idx, dates[-1], color='red', alpha=0.2)
 
-ax_trades.set_title("Aktienkurs mit Kauf-/Verkaufsphasen", fontsize=14)
+ax_trades.set_title(f"{ticker_input}-Kurs mit Kauf-/Verkaufsphasen", fontsize=14)
 ax_trades.set_xlabel("Datum", fontsize=12)
 ax_trades.set_ylabel("Preis", fontsize=12)
 ax_trades.grid(True, linestyle='--', alpha=0.4)
@@ -405,7 +441,6 @@ with col2:
     st.metric("Negative Trades (Anzahl)", neg_count)
     st.metric("Positive Trades (%)", f"{pos_pct:.2f}%")
 
-# Korrigierter Markdown-Block mit dreifach-quoted String
 st.markdown(f"""
 - **Negative Trades (%)**: {neg_pct:.2f}%  
 - **Gesamt-P&L der positiven Trades**: {pos_pnl:.2f} EUR  
