@@ -306,7 +306,6 @@ st.title("📊 Trading Model - Long Short")
 
 st.markdown("""
 Bitte wähle unten den Ticker und den Beginn des Zeitraums aus.  
-Die optimierten gleitenden Durchschnitte (MA) werden im Hintergrund berechnet, du siehst nur die Endergebnisse.
 """)
 
 # ------------------------------
