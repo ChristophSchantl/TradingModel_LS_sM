@@ -356,8 +356,8 @@ start_date_input = st.date_input(
 cost_pct = st.number_input(
     label="3️⃣ Handelskosten (% pro Trade)", 
     min_value=0.0, 
-    value=5.0, 
-    step=0.1, 
+    value=0.25, 
+    step=0.05, 
     format="%.2f",
     help="Gib hier die prozentuale Gebühr an, die bei jedem Entry und Exit abgezogen wird."
 )
