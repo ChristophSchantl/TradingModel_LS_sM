@@ -289,23 +289,13 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
 
     
     df_wealth = pd.DataFrame({
-            "Datum": data_vis.index,       # data_vis.index ist ohnehin schon ein DatetimeIndex
-            "Wealth": wealth_history       # wealth_history stammt aus dem Trading-Loop
-        })
+        "Datum": data_vis.index,       # data_vis.index ist ohnehin schon ein DatetimeIndex
+        "Wealth": wealth_history       # wealth_history stammt aus dem Trading-Loop
+    })
     
-        return {
-            "trades_df": trades_df,
-            # … alle anderen Keys …
-            "df_plot": df_plot,
-            "df_wealth": df_wealth       # <-- jetzt df_wealth im Rückgabe-Dict aufnehmen
-        }
 
 
-
-
-
-
-
+    
     
     return {
         "trades_df": trades_df,
@@ -323,7 +313,8 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         "total_pnl": float(total_pnl),
         "pos_perf": pos_perf,
         "neg_perf": neg_perf,
-        "df_plot": df_plot
+        "df_plot": df_plot,
+        "df_wealth": df_wealth
     }
 
 
@@ -393,7 +384,6 @@ if run_button:
         pos_perf = results["pos_perf"]
         neg_perf = results["neg_perf"]
         df_plot = results["df_plot"]
-
         df_wealth = results["df_wealth"]
 
 
