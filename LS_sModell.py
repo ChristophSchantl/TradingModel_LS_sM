@@ -689,15 +689,15 @@ if run_button:
             label="Normierter Kurs",
             color="#000000",
             linewidth=1.0,
-            alpha=0.9
+            alpha=0.8
         )
         
-        # b) Normierte Wealth (blau Linie)
+        # b) Normierte Wealth (organge Linie)
         ax.plot(
             dates,
             df_wealth_reindexed["WealthNorm"],
             label="Normierte Wealth",
-            color="#4169E1",
+            color="#ff7f0e",
             linewidth=1.5,
             alpha=0.9
         )
@@ -710,17 +710,17 @@ if run_button:
             if positions[i] != current_phase:
                 phase_end = dates[i - 1]
                 if current_phase == 1:
-                    ax.axvspan(phase_start, phase_end, color="green", alpha=0.15)
+                    ax.axvspan(phase_start, phase_end, color="green", alpha=0.10)
                 elif current_phase == -1:
-                    ax.axvspan(phase_start, phase_end, color="red", alpha=0.15)
+                    ax.axvspan(phase_start, phase_end, color="red", alpha=0.10)
                 current_phase = positions[i]
                 phase_start = dates[i]
         
         # Letzte Phase bis zum Ende
         if current_phase == 1:
-            ax.axvspan(phase_start, dates[-1], color="green", alpha=0.15)
+            ax.axvspan(phase_start, dates[-1], color="green", alpha=0.10)
         elif current_phase == -1:
-            ax.axvspan(phase_start, dates[-1], color="red", alpha=0.15)
+            ax.axvspan(phase_start, dates[-1], color="red", alpha=0.10)
         
         # d) Achsen‐Beschriftungen und Legende
         ax.set_xlabel("Datum", fontsize=12, weight="bold")
