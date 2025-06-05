@@ -739,16 +739,3 @@ if run_button:
         st.pyplot(fig_single)
 
 
-
-
-
-
-
-
-st.set_page_config(
-    page_title="SHI Zertifikate im Vergleich",
-    page_icon="✨",  # ← Hier kannst du auch ein Emoji setzen!
-    layout="wide"
-)
-        
-
