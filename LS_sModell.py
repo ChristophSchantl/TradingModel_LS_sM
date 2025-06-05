@@ -579,7 +579,7 @@ if run_button:
             df_plot["Close"],
             label="Schlusskurs",
             color="#1f77b4",
-            linewidth=1.5,
+            linewidth=1.0,
             alpha=0.9
         )
         
@@ -589,7 +589,7 @@ if run_button:
             df_wealth["Wealth"],
             label="Wealth Performance",
             color="#2ca02c",
-            linewidth=2.0,
+            linewidth=1.0,
             alpha=0.8
         )
         
@@ -688,7 +688,7 @@ if run_button:
             df_plot["PriceNorm"],
             label="Normierter Kurs",
             color="#1f77b4",
-            linewidth=1.5,
+            linewidth=1.0,
             alpha=0.9
         )
         
@@ -698,7 +698,7 @@ if run_button:
             df_wealth_reindexed["WealthNorm"],
             label="Normierte Wealth",
             color="#2ca02c",
-            linewidth=2.0,
+            linewidth=1.0,
             alpha=0.8
         )
         
@@ -740,117 +740,3 @@ if run_button:
         st.pyplot(fig_single)
         
 
-
-
-
-
-
-
-
-
-
-
-        # ---------------------------------------
-        # 6. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
-        # ---------------------------------------
-        st.subheader("☯️ Normalized Price vs. Wealth Index")
-        
-        # 1. Gemeinsames Startdatum (erster Eintrag in df_plot)
-        start_date = df_plot.index[0]
-        
-        # 2. Wealth so zuschneiden, dass es ab exakt diesem Datum beginnt
-        df_wealth_synced = df_wealth[df_wealth["Datum"] >= start_date].copy()
-        df_wealth_synced.set_index("Datum", inplace=True)
-        
-        # 3. Reindexiere Wealth‐Index auf denselben Index wie df_plot.index, mit Forward‐Fill
-        df_wealth_reindexed = df_wealth_synced.reindex(df_plot.index, method="ffill")
-        
-        # 4. Normierung: beide Reihen an t₀ (erstes Datum) auf 1.0 setzen
-        price0  = df_plot["Close"].iloc[0]
-        wealth0 = df_wealth_reindexed["Wealth"].iloc[0]
-        
-        df_plot["PriceNorm"]             = df_plot["Close"]        / price0
-        df_wealth_reindexed["WealthNorm"] = df_wealth_reindexed["Wealth"] / wealth0
-        
-        # 5. Plot beider Norm‐Zeitenreihen auf einer Achse mit professionellem Design
-        fig_single, ax = plt.subplots(figsize=(10, 6), facecolor="white")
-        
-        # Farben: 
-        #   - Für den normierten Kurs wählen wir ein dunkles Blau 
-        #   - Für den normierten Wealth Index ein sattes Grün
-        price_color  = "#0a4475"
-        wealth_color = "#58a14d"
-        
-        # a) Normierter Kurs (blaue Linie)
-        ax.plot(
-            df_plot.index,
-            df_plot["PriceNorm"],
-            label="Normalized Price",
-            color=price_color,
-            linewidth=2.0,
-            alpha=0.9
-        )
-        
-        # b) Normierter Wealth Index (grüne Linie)
-        ax.plot(
-            df_plot.index,
-            df_wealth_reindexed["WealthNorm"],
-            label="Wealth Index",
-            color=wealth_color,
-            linewidth=2.0,
-            alpha=0.9
-        )
-        
-        # c) Phasen‐Shading (Long = hellgrün, Short = hellrot)
-        positions = df_plot["Position"].values
-        current_phase = positions[0]
-        phase_start = df_plot.index[0]
-        for i in range(1, len(df_plot.index)):
-            if positions[i] != current_phase:
-                phase_end = df_plot.index[i - 1]
-                if current_phase == 1:
-                    ax.axvspan(phase_start, phase_end, color="#58a14d", alpha=0.10)
-                elif current_phase == -1:
-                    ax.axvspan(phase_start, phase_end, color="#d94f4f", alpha=0.10)
-                current_phase = positions[i]
-                phase_start = df_plot.index[i]
-        
-        # Letzte Phase bis zum letzten Datum
-        if current_phase == 1:
-            ax.axvspan(phase_start, df_plot.index[-1], color="#58a14d", alpha=0.10)
-        elif current_phase == -1:
-            ax.axvspan(phase_start, df_plot.index[-1], color="#d94f4f", alpha=0.10)
-        
-        # d) Achsen‐Beschriftungen und Tick‐Format
-        ax.set_xlabel("Datum", fontsize=12, weight="bold", color="#333333")
-        ax.set_ylabel("Normierter Wert (t₀ → 1)", fontsize=12, weight="bold", color="#333333")
-        
-        # Datumsticks drehen und Format setzen
-        fig_single.autofmt_xdate(rotation=30)
-        ax.tick_params(axis="x", labelsize=10, color="#555555")
-        ax.tick_params(axis="y", labelsize=10, color="#555555")
-        
-        # e) Raster (Grid) nur horizontal, dezente Linien
-        ax.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.6)
-        ax.set_axisbelow(True)
-        
-        # f) Legende mit Rahmen und transparentem Hintergrund
-        legend = ax.legend(
-            loc="upper left",
-            frameon=True,
-            fontsize=10,
-            facecolor="white",
-            edgecolor="#CCCCCC"
-        )
-        legend.get_frame().set_alpha(0.9)
-        
-        # g) Titel über dem Chart
-        ax.set_title(
-            f"{ticker_input}: Normalized Price vs. Wealth Index",
-            fontsize=14,
-            weight="bold",
-            color="#222222"
-        )
-        
-        # Plot in Streamlit ausgeben
-        st.pyplot(fig_single)
