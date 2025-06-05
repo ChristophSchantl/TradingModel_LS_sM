@@ -561,7 +561,7 @@ if run_button:
         # Kombiniertes Chart: Aktienkurs, Wealth Performance und Phasen
         # -------------------------------------------------------------------
         
-        st.subheader("☯️ Kombi‐Chart: Kurs & Wealth Performance mit Phasen")
+        st.subheader("☯️ Price & Wealth Performance: Phases")
         
         # Erstelle das Figure‐Objekt und zwei Achsen (linke Achse für den Kurs, rechte Achse für Wealth)
         fig_combined, ax_price = plt.subplots(figsize=(10, 6))
@@ -658,7 +658,7 @@ if run_button:
         # ---------------------------------------
         # 6. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
         # ---------------------------------------
-        st.subheader("☯️ Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag")
+        st.subheader("☯️ Normalized Price vs. Wealth Index")
         
         # 1. Gemeinsames Startdatum (erster Eintrag in df_plot)
         start_date = df_plot.index[0]
