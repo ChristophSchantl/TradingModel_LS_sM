@@ -578,7 +578,7 @@ if run_button:
             dates_price,
             df_plot["Close"],
             label="Schlusskurs",
-            color="#1f77b4",
+            color="#000000",
             linewidth=1.0,
             alpha=0.9
         )
@@ -619,9 +619,9 @@ if run_button:
             ax_price.axvspan(phase_start, dates_price[-1], color="red", alpha=0.15)
         
         # 4. Achsen‐Beschriftungen, Legende, Titel, Grid
-        ax_price.set_xlabel("Datum", fontsize=12, weight="bold")
-        ax_price.set_ylabel("Schlusskurs", fontsize=12, color="#1f77b4", weight="bold")
-        ax_wealth.set_ylabel("Wealth (€)", fontsize=12, color="#2ca02c", weight="bold")
+        ax_price.set_xlabel("Datum", fontsize=12, weight="normal")
+        ax_price.set_ylabel("Schlusskurs", fontsize=12, color="#1f77b4", weight="normal")
+        ax_wealth.set_ylabel("Wealth (€)", fontsize=12, color="#2ca02c", weight="normal")
         
         ax_price.tick_params(axis="y", labelcolor="#1f77b4")
         ax_wealth.tick_params(axis="y", labelcolor="#2ca02c")
@@ -723,7 +723,7 @@ if run_button:
             ax.axvspan(phase_start, dates[-1], color="red", alpha=0.10)
         
         # d) Achsen‐Beschriftungen und Legende
-        ax.set_xlabel("Datum", fontsize=12, weight="bold")
+        ax.set_xlabel("Datum", fontsize=12, weight="normal")
         ax.set_ylabel("Normierter Wert (t₀ → 1)", fontsize=12, weight="normal")
         
         ax.legend(loc="upper left", frameon=True, fontsize=10)
