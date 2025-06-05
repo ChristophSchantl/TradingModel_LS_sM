@@ -656,38 +656,34 @@ if run_button:
 
 
         # ---------------------------------------
-        # 6. Normiertes Kombi‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
+        # 6. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
         # ---------------------------------------
-        st.subheader("☯️ Normiertes Kombi‐Chart: Kurs & Wealth, beide ab 1 am selben Tag")
+        st.subheader("☯️ Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag")
         
-        # 1. Bestimme das gemeinsame Startdatum (erster Eintrag von df_plot)
+        # 1. Gemeinsames Startdatum (erster Eintrag in df_plot)
         start_date = df_plot.index[0]
         
-        # 2. Schneide df_wealth so zu, dass es ab genau diesem Datum beginnt
+        # 2. Wealth so zuschneiden, dass es ab genau diesem Datum beginnt
         df_wealth_synced = df_wealth[df_wealth["Datum"] >= start_date].copy()
-        
-        # 3. Setze 'Datum' als Index in df_wealth_synced
         df_wealth_synced.set_index("Datum", inplace=True)
         
-        # 4. Reindexiere df_wealth_synced so, dass es exakt denselben Index wie df_plot hat.
-        #    Fehlende Einträge füllen wir per Forward‐Fill mit dem letzten bekannten Wealth‐Wert.
+        # 3. Reindexiere df_wealth_synced auf denselben Index wie df_plot.index, mit Forward‐Fill
         df_wealth_reindexed = df_wealth_synced.reindex(df_plot.index, method="ffill")
         
-        # 5. Normiere beide Reihen so, dass sie am Startdatum = 1 sind
-        price0 = df_plot["Close"].iloc[0]
+        # 4. Normierung: beide Reihen auf 1 bringen (beide am selben Datum!)
+        price0  = df_plot["Close"].iloc[0]
         wealth0 = df_wealth_reindexed["Wealth"].iloc[0]
         
-        df_plot["PriceNorm"] = df_plot["Close"] / price0
+        df_plot["PriceNorm"]            = df_plot["Close"]        / price0
         df_wealth_reindexed["WealthNorm"] = df_wealth_reindexed["Wealth"] / wealth0
         
-        # 6. Erzeuge Kombi‐Chart mit Twin‐Axes
-        fig_norm, ax_price_norm = plt.subplots(figsize=(10, 6))
-        ax_wealth_norm = ax_price_norm.twinx()
+        # 5. Plot beider Norm‐Zeitenreihen auf einer Achse
+        fig_single, ax = plt.subplots(figsize=(10, 6))
         
         dates = df_plot.index
         
-        # a) Normierter Kurs (linke Achse, Blau)
-        ax_price_norm.plot(
+        # a) Normierter Kurs (blaue Linie)
+        ax.plot(
             dates,
             df_plot["PriceNorm"],
             label="Normierter Kurs",
@@ -696,17 +692,17 @@ if run_button:
             alpha=0.9
         )
         
-        # b) Normierte Wealth (rechte Achse, Grün)
-        ax_wealth_norm.plot(
+        # b) Normierte Wealth (grüne Linie)
+        ax.plot(
             dates,
-            df_wealth_reindexed["WealthNorm"].values,
+            df_wealth_reindexed["WealthNorm"],
             label="Normierte Wealth",
             color="#2ca02c",
             linewidth=2.0,
             alpha=0.8
         )
         
-        # c) Phasen‐Shading (Long in Grün, Short in Rot) über die linke Achse
+        # c) Phasen‐Shading (Long = grün, Short = rot)
         positions = df_plot["Position"].values
         current_phase = positions[0]
         phase_start = dates[0]
@@ -714,40 +710,32 @@ if run_button:
             if positions[i] != current_phase:
                 phase_end = dates[i - 1]
                 if current_phase == 1:
-                    ax_price_norm.axvspan(phase_start, phase_end, color="green", alpha=0.15)
+                    ax.axvspan(phase_start, phase_end, color="green", alpha=0.15)
                 elif current_phase == -1:
-                    ax_price_norm.axvspan(phase_start, phase_end, color="red", alpha=0.15)
+                    ax.axvspan(phase_start, phase_end, color="red", alpha=0.15)
                 current_phase = positions[i]
                 phase_start = dates[i]
         
-        # Letzte Phase bis zum letzten Datum
+        # Letzte Phase bis zum Ende
         if current_phase == 1:
-            ax_price_norm.axvspan(phase_start, dates[-1], color="green", alpha=0.15)
+            ax.axvspan(phase_start, dates[-1], color="green", alpha=0.15)
         elif current_phase == -1:
-            ax_price_norm.axvspan(phase_start, dates[-1], color="red", alpha=0.15)
+            ax.axvspan(phase_start, dates[-1], color="red", alpha=0.15)
         
-        # d) Achsen-Beschriftungen & Legende
-        ax_price_norm.set_xlabel("Datum", fontsize=12, weight="bold")
-        ax_price_norm.set_ylabel("Normierter Kurs (t₀ → 1)", fontsize=12, color="#1f77b4", weight="bold")
-        ax_wealth_norm.set_ylabel("Normierte Wealth (t₀ → 1)", fontsize=12, color="#2ca02c", weight="bold")
+        # d) Achsen‐Beschriftungen und Legende
+        ax.set_xlabel("Datum", fontsize=12, weight="bold")
+        ax.set_ylabel("Normierter Wert (t₀ → 1)", fontsize=12, weight="bold")
         
-        ax_price_norm.tick_params(axis="y", labelcolor="#1f77b4")
-        ax_wealth_norm.tick_params(axis="y", labelcolor="#2ca02c")
+        ax.legend(loc="upper left", frameon=True, fontsize=10)
+        ax.grid(True, linestyle="--", alpha=0.4)
         
-        # Gemeinsame Legende aus beiden Achsen zusammenstellen
-        lines_price_norm, labels_price_norm = ax_price_norm.get_legend_handles_labels()
-        lines_wealth_norm, labels_wealth_norm = ax_wealth_norm.get_legend_handles_labels()
-        all_lines_norm = lines_price_norm + lines_wealth_norm
-        all_labels_norm = labels_price_norm + labels_wealth_norm
-        ax_price_norm.legend(all_lines_norm, all_labels_norm, loc="upper left", frameon=True, fontsize=10)
-        
-        # e) Grid & Titel
-        ax_price_norm.grid(True, linestyle="--", alpha=0.4)
-        ax_price_norm.set_title(
-            f"{ticker_input}: Normiertes Kombi‐Chart (Kurs & Wealth, beide ab 1 am selben Tag)",
+        # e) Titel
+        ax.set_title(
+            f"{ticker_input}: Normiertes Single-Axis-Chart (Kurs & Wealth, beide ab 1 am selben Tag)",
             fontsize=14,
             weight="bold"
         )
         
-        fig_norm.autofmt_xdate(rotation=30)
-        st.pyplot(fig_norm)
+        fig_single.autofmt_xdate(rotation=30)
+        st.pyplot(fig_single)
+        
