@@ -123,26 +123,45 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     trades = []
     positionswert = 0
 
-    # Liste für Positionsverlauf (1=Long, -1=Short, 0=Neutral)
-    position_history = []
+    # <<< HIER: Listen für Equity und Position initialisieren
+    wealth_history = []         # Wealth pro Tag (Cash + offener Positionswert)
+    position_history = []       # Positionsverlauf (1=Long, -1=Short, 0=Neutral)
 
     for i in range(len(data_vis)):
         price_today = float(data_vis['Close'].iloc[i])
-        if i == 0:
-            position_history.append(0)
-            continue
+        date = data_vis.index[i]
 
+        # Equity-Berechnung: Cash + Marktwert offener Position
+        if position == 1:
+            # Long: Einheiten = positionswert / initial_price
+            units = positionswert / initial_price
+            equity = units * price_today
+        elif position == -1:
+            # Short: positionswert als Margin, Gewinn/Verlust aus Preisdifferenz
+            units = positionswert / initial_price
+            equity = positionswert + (initial_price - price_today) * units
+        else:
+            # Neutral: nur Cash
+            equity = wealth
+
+        # Equity und Position speichern
+        wealth_history.append(equity)
+        position_history.append(position)
+
+        # Signallogik wie gehabt
         ma_s_t = float(data_vis['MA_short'].iloc[i])
         ma_l_t = float(data_vis['MA_long'].iloc[i])
-        ma_s_y = float(data_vis['MA_short'].iloc[i - 1])
-        ma_l_y = float(data_vis['MA_long'].iloc[i - 1])
-        date = data_vis.index[i]
+        if i > 0:
+            ma_s_y = float(data_vis['MA_short'].iloc[i - 1])
+            ma_l_y = float(data_vis['MA_long'].iloc[i - 1])
+        else:
+            ma_s_y = ma_l_y = 0
 
         # Kaufsignal (Long eröffnen)
         if ma_s_t > ma_l_t and ma_s_y <= ma_l_y and position == 0:
             initial_price = price_today
             position = 1
-            buy_fee = wealth * 0  # keine Gebühren
+            buy_fee = 0
             positionswert = wealth - buy_fee
             wealth -= positionswert
             trades.append({
@@ -159,7 +178,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         if ma_s_t < ma_l_t and ma_s_y >= ma_l_y and position == 1:
             position = 0
             gross = (price_today - initial_price) / initial_price * positionswert
-            sell_fee = wealth * 0
+            sell_fee = 0
             net = gross - sell_fee
             cumulative_pnl += net
             wealth += positionswert + net
@@ -177,7 +196,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         if ma_s_t < ma_l_t and ma_s_y >= ma_l_y and position == 0:
             initial_price = price_today
             position = -1
-            short_fee = wealth * 0
+            short_fee = 0
             positionswert = wealth - short_fee
             wealth -= positionswert
             trades.append({
@@ -193,7 +212,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         # Short-Cover + direkt neu kaufen
         if ma_s_t > ma_l_t and ma_s_y <= ma_l_y and position == -1:
             gross = (initial_price - price_today) / initial_price * positionswert
-            cover_fee = wealth * 0
+            cover_fee = 0
             net_cover = gross - cover_fee
             cumulative_pnl += net_cover
             wealth += positionswert + net_cover
@@ -210,7 +229,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
             # Direkt neues Long eröffnen
             initial_price = price_today
             position = 1
-            buy_fee = wealth * 0
+            buy_fee = 0
             positionswert = wealth - buy_fee
             wealth -= positionswert
             trades.append({
@@ -223,28 +242,29 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
                 'Kumulative P&L': cumulative_pnl
             })
 
-        position_history.append(position)
-
     # Offene Position zum Schluss schließen
     if position != 0:
         last_price = float(data_vis['Close'].iloc[-1])
+        last_date = data_vis.index[-1]
         if position == 1:
             gross = (last_price - initial_price) / initial_price * positionswert
         else:
             gross = (initial_price - last_price) / initial_price * positionswert
-        close_fee = wealth * 0
+        close_fee = 0
         net_close = gross - close_fee
         cumulative_pnl += net_close
         wealth += positionswert + net_close
         trades.append({
             'Typ': 'Schließen (Ende)',
-            'Datum': data_vis.index[-1],
+            'Datum': last_date,
             'Kurs': last_price,
             'Spesen': close_fee,
             'Positionswert': None,
             'Profit/Loss': net_close,
             'Kumulative P&L': cumulative_pnl
         })
+        # Letzten Equity-Wert überschreiben, weil hier geschlossen wurde
+        wealth_history[-1] = wealth
 
     trades_df = pd.DataFrame(trades)
 
@@ -284,19 +304,12 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     df_plot = data_vis[['Close']].copy().iloc[len(data_vis) - len(position_history):]
     df_plot['Position'] = position_history
 
-
-
-
-    
+    # <<< HIER: DataFrame für Equity Curve erzeugen
     df_wealth = pd.DataFrame({
-        "Datum": data_vis.index,       # data_vis.index ist ohnehin schon ein DatetimeIndex
-        "Wealth": wealth_history       # wealth_history stammt aus dem Trading-Loop
+        "Datum": data_vis.index,       # data_vis.index ist ein DatetimeIndex
+        "Wealth": wealth_history       # wealth_history wurde im Loop befüllt
     })
-    
 
-
-    
-    
     return {
         "trades_df": trades_df,
         "strategy_return": float(strategy_return),
@@ -386,15 +399,12 @@ if run_button:
         df_plot = results["df_plot"]
         df_wealth = results["df_wealth"]
 
-
-
-        
         # ---------------------------------------
         # 1. Performance-Vergleich (Strategie vs. Buy & Hold)
         # ---------------------------------------
         st.subheader("1. Performance-Vergleich")
         fig_performance, ax_perf = plt.subplots(figsize=(8, 5))
-        
+
         # Balken zeichnen
         bars = ax_perf.bar(
             ['Strategie', 'Buy & Hold'],
@@ -402,7 +412,7 @@ if run_button:
             color=['#1f77b4', '#ff7f0e'],
             alpha=0.8
         )
-        
+
         # Prozentwerte über die Balken schreiben
         for bar in bars:
             height = bar.get_height()
@@ -413,12 +423,11 @@ if run_button:
                 ha='center',                         # horizontal zentriert
                 va='bottom'                          # vertikal direkt über dem Balken
             )
-        
+
         ax_perf.set_ylabel("Rendite (%)", fontsize=12)
         ax_perf.set_title(f"Strategie vs. Buy-&-Hold für {ticker_input}", fontsize=14)
         ax_perf.grid(axis='y', linestyle='--', alpha=0.5)
         st.pyplot(fig_performance)
-
 
         # ---------------------------------------
         # 2. Kursdiagramm mit Kauf-/Verkaufsphasen
@@ -480,17 +489,17 @@ if run_button:
 
         # Layout: drei Spalten
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             st.metric("Gesamtzahl der Einträge (Entry+Exit)", total_trades)
             st.metric("Davon Long-Trades (Entry-Zeilen)", long_trades)
             st.metric("Davon Short-Trades (Entry-Zeilen)", short_trades)
-        
+
         with col2:
             st.metric("Positive Trades (Anzahl)", pos_count)
             st.metric("Negative Trades (Anzahl)", neg_count)
             st.metric("Positive Trades (%)", f"{pos_pct:.2f}%")
-        
+
         with col3:
             # Neue Kennzahlen: Strategie‐Performance vs. Buy-&-Hold
             st.metric("Strategie-Return", f"{strategy_return:.2f}%")
@@ -502,7 +511,7 @@ if run_button:
             else:
                 sign = ""
             st.metric("Outperformance vs. B&H", f"{sign}{diff:.2f}%")
-        
+
         # Bullet‐Points mit P&L‐Summen und Performances pro Trade-Typ
         st.markdown(f"""
         - **Negative Trades (%)**: {neg_pct:.2f}%  
@@ -512,7 +521,7 @@ if run_button:
         - **Performance positive Trades**: {pos_perf:.2f}%  
         - **Performance negative Trades**: {neg_perf:.2f}%  
         """)
-        
+
         # Professioneller Vergleichstext
         st.markdown("""
         ---
@@ -547,7 +556,6 @@ if run_button:
         ax_counts.grid(axis='y', linestyle='--', alpha=0.5)
         st.pyplot(fig_counts)
 
-
         # ---------------------------------------
         # 6. Wealth Performance (Equity Curve)
         # ---------------------------------------
@@ -568,18 +576,3 @@ if run_button:
         ax_wealth.set_ylabel("Vermögen (€)", fontsize=12)
         ax_wealth.grid(True, linestyle="--", alpha=0.5)
         st.pyplot(fig_wealth)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
