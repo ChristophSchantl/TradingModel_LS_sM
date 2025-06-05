@@ -561,7 +561,7 @@ if run_button:
         # Kombiniertes Chart: Aktienkurs, Wealth Performance und Phasen
         # -------------------------------------------------------------------
         
-        st.subheader("☯️ Price & Wealth Performance: Phases")
+        st.subheader("6. Price & Wealth Performance: Phases")
         
         # Erstelle das Figure‐Objekt und zwei Achsen (linke Achse für den Kurs, rechte Achse für Wealth)
         fig_combined, ax_price = plt.subplots(figsize=(10, 6))
@@ -641,7 +641,7 @@ if run_button:
         ax_price.set_title(
             f"{ticker_input}: Price & Wealth Performance incl. Phases",
             fontsize=14,
-            weight="bold"
+            weight="normal"
         )
         
         # X‐Achse optisch enger machen
@@ -658,7 +658,7 @@ if run_button:
         # ---------------------------------------
         # 6. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
         # ---------------------------------------
-        st.subheader("☯️ Normalized Price vs. Wealth Index")
+        st.subheader("7. Normalized Price vs. Wealth Index")
         
         # 1. Gemeinsames Startdatum (erster Eintrag in df_plot)
         start_date = df_plot.index[0]
@@ -682,7 +682,7 @@ if run_button:
         
         dates = df_plot.index
         
-        # a) Normierter Kurs (blaue Linie)
+        # a) Normierter Kurs (schwarz Linie)
         ax.plot(
             dates,
             df_plot["PriceNorm"],
@@ -697,8 +697,8 @@ if run_button:
             dates,
             df_wealth_reindexed["WealthNorm"],
             label="Normierte Wealth",
-            color="#1f77b4",
-            linewidth=1.0,
+            color="#008000",
+            linewidth=2.0,
             alpha=0.8
         )
         
@@ -733,7 +733,7 @@ if run_button:
         ax.set_title(
             f"{ticker_input}: Normalized Price vs. Wealth Index",
             fontsize=14,
-            weight="bold"
+            weight="normal"
         )
         
         fig_single.autofmt_xdate(rotation=0)
