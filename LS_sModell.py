@@ -692,14 +692,14 @@ if run_button:
             alpha=0.9
         )
         
-        # b) Normierte Wealth (grüne Linie)
+        # b) Normierte Wealth (blau Linie)
         ax.plot(
             dates,
             df_wealth_reindexed["WealthNorm"],
             label="Normierte Wealth",
-            color="#008000",
-            linewidth=2.0,
-            alpha=0.8
+            color="#4169E1",
+            linewidth=1.5,
+            alpha=0.9
         )
         
         # c) Phasen‐Shading (Long = grün, Short = rot)
@@ -724,7 +724,7 @@ if run_button:
         
         # d) Achsen‐Beschriftungen und Legende
         ax.set_xlabel("Datum", fontsize=12, weight="bold")
-        ax.set_ylabel("Normierter Wert (t₀ → 1)", fontsize=12, weight="bold")
+        ax.set_ylabel("Normierter Wert (t₀ → 1)", fontsize=12, weight="normal")
         
         ax.legend(loc="upper left", frameon=True, fontsize=10)
         ax.grid(True, linestyle="--", alpha=0.4)
