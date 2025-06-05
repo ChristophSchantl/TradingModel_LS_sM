@@ -334,7 +334,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
 # ---------------------------------------
 # Streamlit-App
 # ---------------------------------------
-st.title("📊 Trading Model – LS25")
+st.title("📊 AI Quant LS Model")
 
 st.markdown("""
 Bitte wähle unten den Ticker, den Beginn des Zeitraums und das Startkapital aus.  
@@ -656,49 +656,51 @@ if run_button:
 
 
         # ---------------------------------------
-        # 6. Normiertes Kombi‐Chart: Kurs & Wealth (beide ab 1 am gleichen Tag)
+        # 6. Normiertes Kombi‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
         # ---------------------------------------
         st.subheader("☯️ Normiertes Kombi‐Chart: Kurs & Wealth, beide ab 1 am selben Tag")
         
-        # 1. Wir synchronisieren erstmals die Zeitreihen:
+        # 1. Bestimme das gemeinsame Startdatum (erster Eintrag von df_plot)
+        start_date = df_plot.index[0]
         
-        # df_plot.index ist ein DatetimeIndex, der ab dem ersten tatsächlichen Handelstag (i=1) beginnt.
-        # df_wealth["Datum"] war bisher ab i=0 – wir trimmen df_wealth so, dass es ab demselben Datum startet:
-        start_date = df_plot.index[0]                     # das Datum, an dem df_plot wirklich beginnt
-        # Filtern: behalte aus df_wealth nur Einträge ab diesem Startdatum
-        df_wealth_synced = df_wealth[df_wealth["Datum"] == start_date : ].copy()
+        # 2. Schneide df_wealth so zu, dass es ab diesem Datum beginnt (Boolesche Maske)
+        df_wealth_synced = df_wealth[df_wealth["Datum"] >= start_date].copy()
         
-        # Falls df_wealth Synced weniger Einträge hat als df_plot, ragen wir Wealth‐Index
-        # einfach mit NaN auf, bis die Längen übereinstimmen.
-        # (normalerweise sollte die Länge exakt passen, weil WealthHistory pro i erzeugt wurde)
-        if len(df_wealth_synced) < len(df_plot):
-            # z.B. einfügen von NaNs, um Längen auszugleichen
-            # (in der Praxis sollte das nicht nötig sein, wenn wealth_history richtig befüllt wurde)
+        # Falls df_wealth zwar einen Eintrag an start_date hat, aber 
+        # df_plot vielleicht erst ab dem zweiten Eintrag „echte“ Daten hat, 
+        # stelle sicher, dass Länge und Index positionell zusammenpassen:
+        # (in den meisten Fällen ist df_wealth schon genau ab start_date gefüllt,
+        #  aber zur Sicherheit prüfen wir die Länge.)
+        if len(df_wealth_synced) > len(df_plot):
+            # Wenn df_wealth_synced mehr Zeilen hat, als df_plot, kürzen wir
+            df_wealth_synced = df_wealth_synced.iloc[:len(df_plot)].copy()
+        elif len(df_wealth_synced) < len(df_plot):
+            # Falls df_wealth_synced kürzer ist, füllen wir die letzten fehlenden Zeilen
+            # einfach mit dem letzten bekannten Wealth‐Wert auf
             diff = len(df_plot) - len(df_wealth_synced)
-            idx_fill = [df_plot.index[-1]] * diff
+            last_wealth = df_wealth_synced["Wealth"].iloc[-1]
+            # Erzeuge ein DataFrame mit „diff“ Zeilen, Datum = df_plot.index[-diff:]
+            fill_dates = df_plot.index[-diff:]
             df_fill = pd.DataFrame({
-                "Datum": idx_fill,
-                "Wealth": [df_wealth_synced["Wealth"].iloc[-1]] * diff
+                "Datum": fill_dates,
+                "Wealth": [last_wealth] * diff
             })
             df_wealth_synced = pd.concat([df_wealth_synced, df_fill], ignore_index=True)
         
-        # Jetzt haben df_plot und df_wealth_synced denselben ersten Index: df_plot.index[0].
-        
-        # 2. Normierung auf exakt 1 am gemeinsamen Startdatum:
+        # 3. Normiere beide Reihen so, dass sie am Startdatum = 1 sind
         price0 = df_plot["Close"].iloc[0]
         wealth0 = df_wealth_synced["Wealth"].iloc[0]
         
-        # Normierte Spalten erstellen
         df_plot["PriceNorm"] = df_plot["Close"] / price0
         df_wealth_synced["WealthNorm"] = df_wealth_synced["Wealth"] / wealth0
         
-        # 3. Kombiniertes Twin‐Axes‐Chart zeichnen
+        # 4. Erzeuge Kombi‐Chart mit Twin‐Axes
         fig_norm, ax_price_norm = plt.subplots(figsize=(10, 6))
         ax_wealth_norm = ax_price_norm.twinx()
         
         dates = df_plot.index
         
-        # a) Normierter Kurs (linke Achse)
+        # a) Normierter Kurs (linke Achse, Blau)
         ax_price_norm.plot(
             dates,
             df_plot["PriceNorm"],
@@ -708,17 +710,17 @@ if run_button:
             alpha=0.9
         )
         
-        # b) Normierte Wealth (rechte Achse)
+        # b) Normierte Wealth (rechte Achse, Grün)
         ax_wealth_norm.plot(
             dates,
-            df_wealth_synced["WealthNorm"].values,   # gleiche Länge wie df_plot
+            df_wealth_synced["WealthNorm"].values,
             label="Normierte Wealth",
             color="#2ca02c",
             linewidth=2.0,
             alpha=0.8
         )
         
-        # c) Phasen‐Shading (Long/Short), über die linke Achse (Kurs) legen
+        # c) Phasen‐Shading (Long in Grün, Short in Rot) über die linke Achse
         positions = df_plot["Position"].values
         current_phase = positions[0]
         phase_start = dates[0]
@@ -738,7 +740,7 @@ if run_button:
         elif current_phase == -1:
             ax_price_norm.axvspan(phase_start, dates[-1], color="red", alpha=0.15)
         
-        # d) Achsen-Beschriftungen & gemeinsame Legende
+        # d) Achsen-Beschriftungen & Legende
         ax_price_norm.set_xlabel("Datum", fontsize=12, weight="bold")
         ax_price_norm.set_ylabel("Normierter Kurs (t₀ → 1)", fontsize=12, color="#1f77b4", weight="bold")
         ax_wealth_norm.set_ylabel("Normierte Wealth (t₀ → 1)", fontsize=12, color="#2ca02c", weight="bold")
@@ -746,14 +748,14 @@ if run_button:
         ax_price_norm.tick_params(axis="y", labelcolor="#1f77b4")
         ax_wealth_norm.tick_params(axis="y", labelcolor="#2ca02c")
         
-        # Gemeinsame Legende aus beiden Achsen zusammenführen
+        # Gemeinsame Legende aus beiden Achsen zusammenstellen
         lines_price_norm, labels_price_norm = ax_price_norm.get_legend_handles_labels()
         lines_wealth_norm, labels_wealth_norm = ax_wealth_norm.get_legend_handles_labels()
         all_lines_norm = lines_price_norm + lines_wealth_norm
         all_labels_norm = labels_price_norm + labels_wealth_norm
         ax_price_norm.legend(all_lines_norm, all_labels_norm, loc="upper left", frameon=True, fontsize=10)
         
-        # e) Grid und Titel
+        # e) Grid & Titel
         ax_price_norm.grid(True, linestyle="--", alpha=0.4)
         ax_price_norm.set_title(
             f"{ticker_input}: Normiertes Kombi‐Chart (Kurs & Wealth, beide ab 1 am selben Tag)",
@@ -763,11 +765,3 @@ if run_button:
         
         fig_norm.autofmt_xdate(rotation=30)
         st.pyplot(fig_norm)
-
-        
-        
-        
-        
-        
-        
-        
