@@ -663,38 +663,24 @@ if run_button:
         # 1. Bestimme das gemeinsame Startdatum (erster Eintrag von df_plot)
         start_date = df_plot.index[0]
         
-        # 2. Schneide df_wealth so zu, dass es ab diesem Datum beginnt (Boolesche Maske)
+        # 2. Schneide df_wealth so zu, dass es ab genau diesem Datum beginnt
         df_wealth_synced = df_wealth[df_wealth["Datum"] >= start_date].copy()
         
-        # Falls df_wealth zwar einen Eintrag an start_date hat, aber 
-        # df_plot vielleicht erst ab dem zweiten Eintrag „echte“ Daten hat, 
-        # stelle sicher, dass Länge und Index positionell zusammenpassen:
-        # (in den meisten Fällen ist df_wealth schon genau ab start_date gefüllt,
-        #  aber zur Sicherheit prüfen wir die Länge.)
-        if len(df_wealth_synced) > len(df_plot):
-            # Wenn df_wealth_synced mehr Zeilen hat, als df_plot, kürzen wir
-            df_wealth_synced = df_wealth_synced.iloc[:len(df_plot)].copy()
-        elif len(df_wealth_synced) < len(df_plot):
-            # Falls df_wealth_synced kürzer ist, füllen wir die letzten fehlenden Zeilen
-            # einfach mit dem letzten bekannten Wealth‐Wert auf
-            diff = len(df_plot) - len(df_wealth_synced)
-            last_wealth = df_wealth_synced["Wealth"].iloc[-1]
-            # Erzeuge ein DataFrame mit „diff“ Zeilen, Datum = df_plot.index[-diff:]
-            fill_dates = df_plot.index[-diff:]
-            df_fill = pd.DataFrame({
-                "Datum": fill_dates,
-                "Wealth": [last_wealth] * diff
-            })
-            df_wealth_synced = pd.concat([df_wealth_synced, df_fill], ignore_index=True)
+        # 3. Setze 'Datum' als Index in df_wealth_synced
+        df_wealth_synced.set_index("Datum", inplace=True)
         
-        # 3. Normiere beide Reihen so, dass sie am Startdatum = 1 sind
+        # 4. Reindexiere df_wealth_synced so, dass es exakt denselben Index wie df_plot hat.
+        #    Fehlende Einträge füllen wir per Forward‐Fill mit dem letzten bekannten Wealth‐Wert.
+        df_wealth_reindexed = df_wealth_synced.reindex(df_plot.index, method="ffill")
+        
+        # 5. Normiere beide Reihen so, dass sie am Startdatum = 1 sind
         price0 = df_plot["Close"].iloc[0]
-        wealth0 = df_wealth_synced["Wealth"].iloc[0]
+        wealth0 = df_wealth_reindexed["Wealth"].iloc[0]
         
         df_plot["PriceNorm"] = df_plot["Close"] / price0
-        df_wealth_synced["WealthNorm"] = df_wealth_synced["Wealth"] / wealth0
+        df_wealth_reindexed["WealthNorm"] = df_wealth_reindexed["Wealth"] / wealth0
         
-        # 4. Erzeuge Kombi‐Chart mit Twin‐Axes
+        # 6. Erzeuge Kombi‐Chart mit Twin‐Axes
         fig_norm, ax_price_norm = plt.subplots(figsize=(10, 6))
         ax_wealth_norm = ax_price_norm.twinx()
         
@@ -713,7 +699,7 @@ if run_button:
         # b) Normierte Wealth (rechte Achse, Grün)
         ax_wealth_norm.plot(
             dates,
-            df_wealth_synced["WealthNorm"].values,
+            df_wealth_reindexed["WealthNorm"].values,
             label="Normierte Wealth",
             color="#2ca02c",
             linewidth=2.0,
