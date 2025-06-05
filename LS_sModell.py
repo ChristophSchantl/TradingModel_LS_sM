@@ -378,7 +378,7 @@ if run_button:
         st.error("Bitte gib zunächst einen gültigen Ticker ein, z. B. 'AAPL' oder 'MSFT'.")
     else:
         start_date_str = start_date_input.strftime("%Y-%m-%d")
-        with st.spinner("⏳ Berechne Optimierung und Trades… bitte einen Moment warten"):
+        with st.spinner("⏳ Berechne Signale und Trades… bitte einen Moment warten"):
             results = optimize_and_run(ticker_input, start_date_str, float(start_capital_input))
 
         trades_df = results["trades_df"]
@@ -736,7 +736,7 @@ if run_button:
             weight="bold"
         )
         
-        fig_single.autofmt_xdate(rotation=30)
+        fig_single.autofmt_xdate(rotation=0)
         st.pyplot(fig_single)
         
 
