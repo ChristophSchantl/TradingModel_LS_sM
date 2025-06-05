@@ -284,6 +284,29 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     df_plot = data_vis[['Close']].copy().iloc[len(data_vis) - len(position_history):]
     df_plot['Position'] = position_history
 
+
+
+
+    
+    df_wealth = pd.DataFrame({
+            "Datum": data_vis.index,       # data_vis.index ist ohnehin schon ein DatetimeIndex
+            "Wealth": wealth_history       # wealth_history stammt aus dem Trading-Loop
+        })
+    
+        return {
+            "trades_df": trades_df,
+            # … alle anderen Keys …
+            "df_plot": df_plot,
+            "df_wealth": df_wealth       # <-- jetzt df_wealth im Rückgabe-Dict aufnehmen
+        }
+
+
+
+
+
+
+
+    
     return {
         "trades_df": trades_df,
         "strategy_return": float(strategy_return),
@@ -371,6 +394,11 @@ if run_button:
         neg_perf = results["neg_perf"]
         df_plot = results["df_plot"]
 
+        df_wealth = results["df_wealth"]
+
+
+
+        
         # ---------------------------------------
         # 1. Performance-Vergleich (Strategie vs. Buy & Hold)
         # ---------------------------------------
@@ -533,20 +561,22 @@ if run_button:
         # ---------------------------------------
         # 6. Wealth Performance (Equity Curve)
         # ---------------------------------------
-        st.subheader("6. Wealth Performance (Equity Curve)")
-        df_wealth['Datum'] = pd.to_datetime(df_wealth['Datum'])
+        # Datumsspalte nur umwandeln, falls sie noch kein datetime64-Dtype hat
+        if not np.issubdtype(df_wealth["Datum"].dtype, np.datetime64):
+            df_wealth["Datum"] = pd.to_datetime(df_wealth["Datum"])
+
         fig_wealth, ax_wealth = plt.subplots(figsize=(8, 5))
         ax_wealth.plot(
-            df_wealth['Datum'],
-            df_wealth['Wealth'],
-            label='Equity Curve',
-            color='#2ca02c',
+            df_wealth["Datum"],
+            df_wealth["Wealth"],
+            label="Equity Curve",
+            color="#2ca02c",
             linewidth=2
         )
         ax_wealth.set_title(f"Wealth Performance für {ticker_input}", fontsize=14)
         ax_wealth.set_xlabel("Datum", fontsize=12)
         ax_wealth.set_ylabel("Vermögen (€)", fontsize=12)
-        ax_wealth.grid(True, linestyle='--', alpha=0.5)
+        ax_wealth.grid(True, linestyle="--", alpha=0.5)
         st.pyplot(fig_wealth)
 
 
