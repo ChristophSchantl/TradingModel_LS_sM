@@ -334,7 +334,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
 # ---------------------------------------
 # Streamlit-App
 # ---------------------------------------
-st.title("📊 AI Quant LS Model")
+st.title("✨ AI Quant LS Model")
 
 st.markdown("""
 Bitte wähle unten den Ticker, den Beginn des Zeitraums und das Startkapital aus.  
@@ -639,7 +639,7 @@ if run_button:
         
         # Professioneller Titel
         ax_price.set_title(
-            f"{ticker_input}: Kurs & Wealth Performance mit Kauf/Verkauf-Phasen",
+            f"{ticker_input}: Price & Wealth Performance incl. Phases",
             fontsize=14,
             weight="bold"
         )
@@ -731,7 +731,7 @@ if run_button:
         
         # e) Titel
         ax.set_title(
-            f"{ticker_input}: Normiertes Single-Axis-Chart (Kurs & Wealth, beide ab 1 am selben Tag)",
+            f"{ticker_input}: Normalized Price vs. Wealth Index",
             fontsize=14,
             weight="bold"
         )
