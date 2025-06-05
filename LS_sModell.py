@@ -573,23 +573,23 @@ if run_button:
         dates_price = df_plot.index            # Index von df_plot (DatetimeIndex)
         dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex)
         
-        # 1. Aktienkurs (linke Achse)
+        # 1. Aktienkurs (linke Achse,schwarz)
         ax_price.plot(
             dates_price,
             df_plot["Close"],
             label="Schlusskurs",
             color="#000000",
             linewidth=1.0,
-            alpha=0.9
+            alpha=0.5
         )
         
-        # 2. Wealth Performance (rechte Achse)
+        # 2. Wealth Performance (rechte Achse, gruen)
         ax_wealth.plot(
             dates_wealth,
             df_wealth["Wealth"],
             label="Wealth Performance",
             color="#2ca02c",
-            linewidth=1.0,
+            linewidth=1.3,
             alpha=0.8
         )
         
@@ -620,10 +620,10 @@ if run_button:
         
         # 4. Achsen‐Beschriftungen, Legende, Titel, Grid
         ax_price.set_xlabel("Datum", fontsize=12, weight="normal")
-        ax_price.set_ylabel("Schlusskurs", fontsize=12, color="#1f77b4", weight="normal")
+        ax_price.set_ylabel("Schlusskurs", fontsize=12, color="#000000", weight="normal")
         ax_wealth.set_ylabel("Wealth (€)", fontsize=12, color="#2ca02c", weight="normal")
         
-        ax_price.tick_params(axis="y", labelcolor="#1f77b4")
+        ax_price.tick_params(axis="y", labelcolor="#000000")
         ax_wealth.tick_params(axis="y", labelcolor="#2ca02c")
         
         # Gemeinsame Legende: Wir kombinieren die Handles beider Achsen
@@ -645,7 +645,7 @@ if run_button:
         )
         
         # X‐Achse optisch enger machen
-        fig_combined.autofmt_xdate(rotation=30)
+        fig_combined.autofmt_xdate(rotation=0)
         
         # Plot in Streamlit einbinden
         st.pyplot(fig_combined)
@@ -689,17 +689,17 @@ if run_button:
             label="Normierter Kurs",
             color="#000000",
             linewidth=1.0,
-            alpha=0.8
+            alpha=0.5
         )
         
-        # b) Normierte Wealth (organge Linie)
+        # b) Normierte Wealth (gruen Linie)
         ax.plot(
             dates,
             df_wealth_reindexed["WealthNorm"],
             label="Normierte Wealth",
-            color="#ff7f0e",
+            color="#2ca02c",
             linewidth=1.5,
-            alpha=0.9
+            alpha=0.8
         )
         
         # c) Phasen‐Shading (Long = grün, Short = rot)
