@@ -528,3 +528,38 @@ if run_button:
         ax_counts.set_title("Trade-Einträge-Verteilung", fontsize=14)
         ax_counts.grid(axis='y', linestyle='--', alpha=0.5)
         st.pyplot(fig_counts)
+
+
+        # ---------------------------------------
+        # 6. Wealth Performance (Equity Curve)
+        # ---------------------------------------
+        st.subheader("6. Wealth Performance (Equity Curve)")
+        df_wealth['Datum'] = pd.to_datetime(df_wealth['Datum'])
+        fig_wealth, ax_wealth = plt.subplots(figsize=(8, 5))
+        ax_wealth.plot(
+            df_wealth['Datum'],
+            df_wealth['Wealth'],
+            label='Equity Curve',
+            color='#2ca02c',
+            linewidth=2
+        )
+        ax_wealth.set_title(f"Wealth Performance für {ticker_input}", fontsize=14)
+        ax_wealth.set_xlabel("Datum", fontsize=12)
+        ax_wealth.set_ylabel("Vermögen (€)", fontsize=12)
+        ax_wealth.grid(True, linestyle='--', alpha=0.5)
+        st.pyplot(fig_wealth)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
