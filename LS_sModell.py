@@ -409,8 +409,8 @@ if run_button:
         bars = ax_perf.bar(
             ['Strategie', 'Buy & Hold'],
             [strategy_return, buy_and_hold_return],
-            color=['#1f77b4', '#ff7f0e'],
-            alpha=0.8
+            color=['#2ca02c', '#000000'],
+            alpha=0.7
         )
 
         # Prozentwerte über die Balken schreiben
