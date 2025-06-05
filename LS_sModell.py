@@ -687,7 +687,7 @@ if run_button:
             dates,
             df_plot["PriceNorm"],
             label="Normierter Kurs",
-            color="#1f77b4",
+            color="#000000",
             linewidth=1.0,
             alpha=0.9
         )
@@ -697,7 +697,7 @@ if run_button:
             dates,
             df_wealth_reindexed["WealthNorm"],
             label="Normierte Wealth",
-            color="#2ca02c",
+            color="#1f77b4",
             linewidth=1.0,
             alpha=0.8
         )
