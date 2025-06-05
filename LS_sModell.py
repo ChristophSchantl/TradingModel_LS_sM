@@ -556,23 +556,97 @@ if run_button:
         ax_counts.grid(axis='y', linestyle='--', alpha=0.5)
         st.pyplot(fig_counts)
 
-        # ---------------------------------------
-        # 6. Wealth Performance (Equity Curve)
-        # ---------------------------------------
-        # Datumsspalte nur umwandeln, falls sie noch kein datetime64-Dtype hat
-        if not np.issubdtype(df_wealth["Datum"].dtype, np.datetime64):
-            df_wealth["Datum"] = pd.to_datetime(df_wealth["Datum"])
-
-        fig_wealth, ax_wealth = plt.subplots(figsize=(8, 5))
-        ax_wealth.plot(
-            df_wealth["Datum"],
-            df_wealth["Wealth"],
-            label="Equity Curve",
-            color="#2ca02c",
-            linewidth=2
+        
+        # -------------------------------------------------------------------
+        # Kombiniertes Chart: Aktienkurs, Wealth Performance und Phasen
+        # -------------------------------------------------------------------
+        
+        st.subheader("☯️ Kombi‐Chart: Kurs & Wealth Performance mit Phasen")
+        
+        # Erstelle das Figure‐Objekt und zwei Achsen (linke Achse für den Kurs, rechte Achse für Wealth)
+        fig_combined, ax_price = plt.subplots(figsize=(10, 6))
+        
+        # Die zweite Y‐Achse (rechts) teilen
+        ax_wealth = ax_price.twinx()
+        
+        # X‐Werte (Datum) holen
+        dates_price = df_plot.index            # Index von df_plot (DatetimeIndex)
+        dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex)
+        
+        # 1. Aktienkurs (linke Achse)
+        ax_price.plot(
+            dates_price,
+            df_plot["Close"],
+            label="Schlusskurs",
+            color="#1f77b4",
+            linewidth=1.5,
+            alpha=0.9
         )
-        ax_wealth.set_title(f"Wealth Performance für {ticker_input}", fontsize=14)
-        ax_wealth.set_xlabel("Datum", fontsize=12)
-        ax_wealth.set_ylabel("Vermögen (€)", fontsize=12)
-        ax_wealth.grid(True, linestyle="--", alpha=0.5)
-        st.pyplot(fig_wealth)
+        
+        # 2. Wealth Performance (rechte Achse)
+        ax_wealth.plot(
+            dates_wealth,
+            df_wealth["Wealth"],
+            label="Wealth Performance",
+            color="#2ca02c",
+            linewidth=2.0,
+            alpha=0.8
+        )
+        
+        # 3. Phasen‐Shading über den Kurs‐Plot legen
+        #    Wir lesen die Positionen aus df_plot: 1=Long, -1=Short, 0=Neutral
+        positions = df_plot["Position"].values
+        
+        # Wir gehen das Datum‐Array durch und schattieren, sobald sich die Position ändert
+        current_phase = positions[0]
+        phase_start = dates_price[0]
+        
+        for i in range(1, len(dates_price)):
+            if positions[i] != current_phase:
+                phase_end = dates_price[i - 1]
+                if current_phase == 1:
+                    ax_price.axvspan(phase_start, phase_end, color="green", alpha=0.15)
+                elif current_phase == -1:
+                    ax_price.axvspan(phase_start, phase_end, color="red", alpha=0.15)
+                # Neue Phase starten
+                current_phase = positions[i]
+                phase_start = dates_price[i]
+        
+        # Letzte Phase bis zum Ende
+        if current_phase == 1:
+            ax_price.axvspan(phase_start, dates_price[-1], color="green", alpha=0.15)
+        elif current_phase == -1:
+            ax_price.axvspan(phase_start, dates_price[-1], color="red", alpha=0.15)
+        
+        # 4. Achsen‐Beschriftungen, Legende, Titel, Grid
+        ax_price.set_xlabel("Datum", fontsize=12, weight="bold")
+        ax_price.set_ylabel("Schlusskurs", fontsize=12, color="#1f77b4", weight="bold")
+        ax_wealth.set_ylabel("Wealth (€)", fontsize=12, color="#2ca02c", weight="bold")
+        
+        ax_price.tick_params(axis="y", labelcolor="#1f77b4")
+        ax_wealth.tick_params(axis="y", labelcolor="#2ca02c")
+        
+        # Gemeinsame Legende: Wir kombinieren die Handles beider Achsen
+        lines_price, labels_price = ax_price.get_legend_handles_labels()
+        lines_wealth, labels_wealth = ax_wealth.get_legend_handles_labels()
+        all_lines = lines_price + lines_wealth
+        all_labels = labels_price + labels_wealth
+        
+        ax_price.legend(all_lines, all_labels, loc="upper left", frameon=True, fontsize=10)
+        
+        # Leichtes Grid im Hintergrund
+        ax_price.grid(True, linestyle="--", alpha=0.4)
+        
+        # Professioneller Titel
+        ax_price.set_title(
+            f"{ticker_input}: Kurs & Wealth Performance mit Kauf/Verkauf-Phasen",
+            fontsize=14,
+            weight="bold"
+        )
+        
+        # X‐Achse optisch enger machen
+        fig_combined.autofmt_xdate(rotation=30)
+        
+        # Plot in Streamlit einbinden
+        st.pyplot(fig_combined)
+        
