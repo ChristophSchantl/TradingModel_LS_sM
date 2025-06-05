@@ -649,4 +649,107 @@ if run_button:
         
         # Plot in Streamlit einbinden
         st.pyplot(fig_combined)
+
+
+
+
+
+
+        # -------------------------------------------------------------------
+        # Kombi‐Chart, normalisiert (beide Kurven starten bei 1)
+        # -------------------------------------------------------------------
+        
+        st.subheader("☯️ Normiertes Kombi‐Chart: Kurs & Wealth, beide ab 1")
+        
+        # Normierung: beide Reihen so umformen, dass t=0 den Wert 1 hat
+        price0 = df_plot["Close"].iloc[0]
+        wealth0 = df_wealth["Wealth"].iloc[0]
+        
+        df_plot["PriceNorm"] = df_plot["Close"] / price0
+        df_wealth["WealthNorm"] = df_wealth["Wealth"] / wealth0
+        
+        # Erzeuge eine Figure mit Twin‐Axes
+        fig_norm, ax_price_norm = plt.subplots(figsize=(10, 6))
+        ax_wealth_norm = ax_price_norm.twinx()
+        
+        # Datum für die x‐Achse
+        dates_price = df_plot.index
+        dates_wealth = df_wealth["Datum"]
+        
+        # 1. Normierter Aktienkurs (linke Achse)
+        ax_price_norm.plot(
+            dates_price,
+            df_plot["PriceNorm"],
+            label="Normierter Kurs",
+            color="#1f77b4",
+            linewidth=1.5,
+            alpha=0.9
+        )
+        
+        # 2. Normierte Wealth Performance (rechte Achse)
+        ax_wealth_norm.plot(
+            dates_wealth,
+            df_wealth["WealthNorm"],
+            label="Normierte Wealth",
+            color="#2ca02c",
+            linewidth=2.0,
+            alpha=0.8
+        )
+        
+        # 3. Phasen‐Shading (Long = grün, Short = rot) über den normierten Kurs legen
+        positions = df_plot["Position"].values
+        current_phase = positions[0]
+        phase_start = dates_price[0]
+        for i in range(1, len(dates_price)):
+            if positions[i] != current_phase:
+                phase_end = dates_price[i - 1]
+                if current_phase == 1:
+                    ax_price_norm.axvspan(phase_start, phase_end, color="green", alpha=0.15)
+                elif current_phase == -1:
+                    ax_price_norm.axvspan(phase_start, phase_end, color="red", alpha=0.15)
+                current_phase = positions[i]
+                phase_start = dates_price[i]
+        
+        # Letzte Phase bis zum letzten Datum
+        if current_phase == 1:
+            ax_price_norm.axvspan(phase_start, dates_price[-1], color="green", alpha=0.15)
+        elif current_phase == -1:
+            ax_price_norm.axvspan(phase_start, dates_price[-1], color="red", alpha=0.15)
+        
+        # 4. Achsenbeschriftungen und Legende
+        ax_price_norm.set_xlabel("Datum", fontsize=12, weight="bold")
+        ax_price_norm.set_ylabel("Normierter Kurs (t=0 → 1)", fontsize=12, color="#1f77b4", weight="bold")
+        ax_wealth_norm.set_ylabel("Normierte Wealth (t=0 → 1)", fontsize=12, color="#2ca02c", weight="bold")
+        
+        ax_price_norm.tick_params(axis="y", labelcolor="#1f77b4")
+        ax_wealth_norm.tick_params(axis="y", labelcolor="#2ca02c")
+        
+        # Gemeinsame Legende
+        lines_price_norm, labels_price_norm = ax_price_norm.get_legend_handles_labels()
+        lines_wealth_norm, labels_wealth_norm = ax_wealth_norm.get_legend_handles_labels()
+        all_lines_norm = lines_price_norm + lines_wealth_norm
+        all_labels_norm = labels_price_norm + labels_wealth_norm
+        ax_price_norm.legend(all_lines_norm, all_labels_norm, loc="upper left", frameon=True, fontsize=10)
+        
+        # Leichtes Grid
+        ax_price_norm.grid(True, linestyle="--", alpha=0.4)
+        
+        # Professioneller Titel
+        ax_price_norm.set_title(
+            f"{ticker_input}: Normiertes Kombi‐Chart (Kurs & Wealth, beide bei 1)",
+            fontsize=14,
+            weight="bold"
+        )
+        
+        # X‐Achse optisch rotieren
+        fig_norm.autofmt_xdate(rotation=30)
+        
+        # Render in Streamlit
+        st.pyplot(fig_norm)
+        
+        
+        
+        
+        
+        
         
