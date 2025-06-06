@@ -779,7 +779,7 @@ if st.session_state["results"] is not None:
     col_pw, col_btn = st.columns([3, 1])
     with col_pw:
         security_input = st.text_input(
-            label="🔒 Sicherheitscode eingeben, um MA-Werte abzurufen:",
+            label="🔒 Sicherheitscode eingeben, um Signal-Werte abzurufen:",
             type="password",
             key="pw_field",
             help="Nur der Entwickler kennt diesen Code."
