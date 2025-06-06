@@ -9,6 +9,13 @@ import random
 import warnings
 
 warnings.filterwarnings("ignore")
+
+# ---------------------------------------
+# 1. Geheimcode definieren (nur der Entwickler kennt ihn)
+# ---------------------------------------
+SECRET_CODE = "Talant2024!"
+
+
 # ---------------------------------------
 # Funktion, die im Hintergrund Optimierung und Trading ausführt
 # ---------------------------------------
@@ -309,7 +316,10 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         "Wealth": wealth_history       # wealth_history wurde im Loop befüllt
     })
 
+    # 6. Rückgabe aller Werte, inkl. best_short und best_long
     return {
+        "best_short": best_short,
+        "best_long": best_long,
         "trades_df": trades_df,
         "strategy_return": float(strategy_return),
         "buy_and_hold_return": float(buy_and_hold_return),
@@ -380,6 +390,9 @@ if run_button:
         with st.spinner("⏳ Berechne Signale und Trades… bitte einen Moment warten"):
             results = optimize_and_run(ticker_input, start_date_str, float(start_capital_input))
 
+        # Aus den Ergebnissen holen (inkl. der MA-Werte, die später geschützt werden)
+        best_short = results["best_short"]
+        best_long = results["best_long"]
         trades_df = results["trades_df"]
         strategy_return = results["strategy_return"]
         buy_and_hold_return = results["buy_and_hold_return"]
@@ -570,9 +583,9 @@ if run_button:
         
         # X‐Werte (Datum) holen
         dates_price = df_plot.index            # Index von df_plot (DatetimeIndex)
-        dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex)
+        dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex")
         
-        # 1. Aktienkurs (linke Achse,schwarz)
+        # 1. Aktienkurs (linke Achse, schwarz)
         ax_price.plot(
             dates_price,
             df_plot["Close"],
@@ -582,7 +595,7 @@ if run_button:
             alpha=0.5
         )
         
-        # 2. Wealth Performance (rechte Achse, gruen)
+        # 2. Wealth Performance (rechte Achse, grün)
         ax_wealth.plot(
             dates_wealth,
             df_wealth["Wealth"],
@@ -650,12 +663,8 @@ if run_button:
         st.pyplot(fig_combined)
 
 
-
-
-
-
         # ---------------------------------------
-        # 6. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
+        # 7. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
         # ---------------------------------------
         st.subheader("7. Normalized Price vs. Wealth Index")
         
@@ -691,7 +700,7 @@ if run_button:
             alpha=0.5
         )
         
-        # b) Normierte Wealth (gruen Linie)
+        # b) Normierte Wealth (grün Linie)
         ax.plot(
             dates,
             df_wealth_reindexed["WealthNorm"],
@@ -739,3 +748,19 @@ if run_button:
         st.pyplot(fig_single)
 
 
+        # ---------------------------------------
+        # 8. Zusätzlich: Sicherheitscode‐Eingabe, um MA-Werte abzufragen
+        # ---------------------------------------
+        st.markdown("---")
+        security_input = st.text_input(
+            label="🔒 Nur mit Sicherheitscode: Zeige die Signale",
+            type="password",
+            help="Gib den Code ein, den nur der Entwickler kennt."
+        )
+
+        if security_input == SECRET_CODE:
+            st.info(f"✅ Optimale MA-Werte:\n\n"
+                    f"- Short MA: `{best_short}` Tage  \n"
+                    f"- Long MA: `{best_long}` Tage")
+        elif security_input != "":
+            st.error("❌ Falscher Sicherheitscode.")
