@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 # ---------------------------------------
 # 1. Geheimcode definieren (nur der Entwickler kennt ihn)
 # ---------------------------------------
-SECRET_CODE = "Talant2024!"
+SECRET_CODE = "MeinGeheimerCode123"
 
 
 # ---------------------------------------
@@ -88,7 +88,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     # 3. DEAP-Setup für GA
     if "FitnessMax" not in creator.__dict__:
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    if "Individual" not in creator.__dict__:
+    if "Individual" not in creator__.__dict__:
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
     toolbox = base.Toolbox()
@@ -381,7 +381,6 @@ st.markdown("---")
 # -------------
 run_button = st.button("🔄 Ergebnisse berechnen")
 
-# nur wenn der Button gedrückt wurde und ein Ticker eingegeben ist:
 if run_button:
     if ticker_input.strip() == "":
         st.error("Bitte gib zunächst einen gültigen Ticker ein, z. B. 'AAPL' oder 'MSFT'.")
@@ -583,7 +582,7 @@ if run_button:
         
         # X‐Werte (Datum) holen
         dates_price = df_plot.index            # Index von df_plot (DatetimeIndex)
-        dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex")
+        dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex)
         
         # 1. Aktienkurs (linke Achse, schwarz)
         ax_price.plot(
@@ -749,18 +748,37 @@ if run_button:
 
 
         # ---------------------------------------
-        # 8. Zusätzlich: Sicherheitscode‐Eingabe, um MA-Werte abzufragen
+        # 8. Sitzungszustand initialisieren für Authentifizierung
+        # ---------------------------------------
+        if 'authenticated' not in st.session_state:
+            st.session_state['authenticated'] = False
+
+        # ---------------------------------------
+        # 9. Passwort-Eingabe + Schaltfläche zum Bestätigen
         # ---------------------------------------
         st.markdown("---")
-        security_input = st.text_input(
-            label="🔒 Nur mit Sicherheitscode: Zeige die Signale",
-            type="password",
-            help="Gib den Code ein, den nur der Entwickler kennt."
-        )
+        col_pw, col_btn = st.columns([3, 1])
+        with col_pw:
+            security_input = st.text_input(
+                label="🔒 Sicherheitscode eingeben, um MA-Werte abzurufen:",
+                type="password",
+                key="pw_field",
+                help="Nur der Entwickler kennt diesen Code."
+            )
+        with col_btn:
+            submit_btn = st.button("🔓 Bestätigen", key="pw_button")
 
-        if security_input == SECRET_CODE:
+        if submit_btn:
+            if security_input == SECRET_CODE:
+                st.session_state['authenticated'] = True
+            else:
+                st.error("❌ Falscher Sicherheitscode.")
+                st.session_state['authenticated'] = False
+
+        # ---------------------------------------
+        # 10. MA-Werte nur anzeigen, wenn authentifiziert
+        # ---------------------------------------
+        if st.session_state['authenticated']:
             st.info(f"✅ Optimale MA-Werte:\n\n"
                     f"- Short MA: `{best_short}` Tage  \n"
                     f"- Long MA: `{best_long}` Tage")
-        elif security_input != "":
-            st.error("❌ Falscher Sicherheitscode.")
