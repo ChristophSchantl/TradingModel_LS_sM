@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 # ---------------------------------------
 # 1. Geheimcode definieren (nur der Entwickler kennt ihn)
 # ---------------------------------------
-SECRET_CODE = "MeinGeheimerCode123"
+SECRET_CODE = "Talant2024!"
 
 # ---------------------------------------
 # 2. Session State initialisieren
