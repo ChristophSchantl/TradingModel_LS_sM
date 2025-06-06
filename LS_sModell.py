@@ -15,9 +15,20 @@ warnings.filterwarnings("ignore")
 # ---------------------------------------
 SECRET_CODE = "MeinGeheimerCode123"
 
+# ---------------------------------------
+# 2. Session State initialisieren
+# ---------------------------------------
+# Wenn wir das erste Mal in die App kommen, legen wir zwei Einträge in session_state an:
+# - "results": dort speichern wir später die Rückgabe von optimize_and_run()
+# - "authenticated": merken wir uns, ob das Passwort korrekt eingegeben wurde
+if "results" not in st.session_state:
+    st.session_state["results"] = None
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+
 
 # ---------------------------------------
-# Funktion, die im Hintergrund Optimierung und Trading ausführt
+# 3. Funktion, die im Hintergrund Optimierung und Trading ausführt
 # ---------------------------------------
 @st.cache_data(show_spinner=False)
 def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
@@ -88,7 +99,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     # 3. DEAP-Setup für GA
     if "FitnessMax" not in creator.__dict__:
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    if "Individual" not in creator__.__dict__:
+    if "Individual" not in creator.__dict__:
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
     toolbox = base.Toolbox()
@@ -341,7 +352,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
 
 
 # ---------------------------------------
-# Streamlit-App
+# 4. Streamlit-App
 # ---------------------------------------
 st.title("✨ AI Quant LS Model")
 
@@ -381,404 +392,411 @@ st.markdown("---")
 # -------------
 run_button = st.button("🔄 Ergebnisse berechnen")
 
+# Wenn wir auf 'Berechnen' klicken, setzen wir authenticated zurück und führen optimize_and_run aus
 if run_button:
+    # 1) Prüfen, ob Ticker eingegeben wurde
     if ticker_input.strip() == "":
         st.error("Bitte gib zunächst einen gültigen Ticker ein, z. B. 'AAPL' oder 'MSFT'.")
     else:
+        # 2) Authentifizierungsstatus zurücksetzen, weil wir neu rechnen
+        st.session_state["authenticated"] = False
+
+        # 3) Optimierung ausführen und alles in session_state["results"] speichern
         start_date_str = start_date_input.strftime("%Y-%m-%d")
         with st.spinner("⏳ Berechne Signale und Trades… bitte einen Moment warten"):
-            results = optimize_and_run(ticker_input, start_date_str, float(start_capital_input))
-
-        # Aus den Ergebnissen holen (inkl. der MA-Werte, die später geschützt werden)
-        best_short = results["best_short"]
-        best_long = results["best_long"]
-        trades_df = results["trades_df"]
-        strategy_return = results["strategy_return"]
-        buy_and_hold_return = results["buy_and_hold_return"]
-        total_trades = results["total_trades"]
-        long_trades = results["long_trades"]
-        short_trades = results["short_trades"]
-        pos_count = results["pos_count"]
-        neg_count = results["neg_count"]
-        pos_pct = results["pos_pct"]
-        neg_pct = results["neg_pct"]
-        pos_pnl = results["pos_pnl"]
-        neg_pnl = results["neg_pnl"]
-        total_pnl = results["total_pnl"]
-        pos_perf = results["pos_perf"]
-        neg_perf = results["neg_perf"]
-        df_plot = results["df_plot"]
-        df_wealth = results["df_wealth"]
-
-        # ---------------------------------------
-        # 1. Performance-Vergleich (Strategie vs. Buy & Hold)
-        # ---------------------------------------
-        st.subheader("1. Performance-Vergleich")
-        fig_performance, ax_perf = plt.subplots(figsize=(8, 5))
-
-        # Balken zeichnen
-        bars = ax_perf.bar(
-            ['Strategie', 'Buy & Hold'],
-            [strategy_return, buy_and_hold_return],
-            color=['#2ca02c', '#000000'],
-            alpha=0.7
-        )
-
-        # Prozentwerte über die Balken schreiben
-        for bar in bars:
-            height = bar.get_height()
-            ax_perf.text(
-                bar.get_x() + bar.get_width() / 2,  # x-Position in der Mitte des Balkens
-                height,                              # y-Position genau auf dem Balken
-                f"{height:.2f}%",                    # Beschriftung
-                ha='center',                         # horizontal zentriert
-                va='bottom'                          # vertikal direkt über dem Balken
+            st.session_state["results"] = optimize_and_run(
+                ticker_input,
+                start_date_str,
+                float(start_capital_input)
             )
 
-        ax_perf.set_ylabel("Rendite (%)", fontsize=12)
-        ax_perf.set_title(f"Strategie vs. Buy-&-Hold für {ticker_input}", fontsize=14)
-        ax_perf.grid(axis='y', linestyle='--', alpha=0.5)
-        st.pyplot(fig_performance)
+# ---------------------------------------
+# 5. Wenn es bereits Ergebnisse in session_state["results"] gibt, zeigen wir alle Grafiken und Tabellen an
+# ---------------------------------------
+if st.session_state["results"] is not None:
+    # 5a) Aus session_state["results"] holen
+    results = st.session_state["results"]
+    best_short = results["best_short"]
+    best_long = results["best_long"]
+    trades_df = results["trades_df"]
+    strategy_return = results["strategy_return"]
+    buy_and_hold_return = results["buy_and_hold_return"]
+    total_trades = results["total_trades"]
+    long_trades = results["long_trades"]
+    short_trades = results["short_trades"]
+    pos_count = results["pos_count"]
+    neg_count = results["neg_count"]
+    pos_pct = results["pos_pct"]
+    neg_pct = results["neg_pct"]
+    pos_pnl = results["pos_pnl"]
+    neg_pnl = results["neg_pnl"]
+    total_pnl = results["total_pnl"]
+    pos_perf = results["pos_perf"]
+    neg_perf = results["neg_perf"]
+    df_plot = results["df_plot"]
+    df_wealth = results["df_wealth"]
 
-        # ---------------------------------------
-        # 2. Kursdiagramm mit Kauf-/Verkaufsphasen
-        # ---------------------------------------
-        st.subheader("2. Kursdiagramm mit Phasen (Kauf/Verkauf)")
+    # ---------------------------------------
+    # 1. Performance-Vergleich (Strategie vs. Buy & Hold)
+    # ---------------------------------------
+    st.subheader("1. Performance-Vergleich")
+    fig_performance, ax_perf = plt.subplots(figsize=(8, 5))
 
-        fig_trades, ax_trades = plt.subplots(figsize=(10, 5))
-        dates = df_plot.index
-        prices = df_plot['Close']
-        positions = df_plot['Position']
+    # Balken zeichnen
+    bars = ax_perf.bar(
+        ['Strategie', 'Buy & Hold'],
+        [strategy_return, buy_and_hold_return],
+        color=['#2ca02c', '#000000'],
+        alpha=0.7
+    )
 
-        ax_trades.plot(dates, prices, label='Close-Preis', color='black', linewidth=1)
-
-        # Phasenschattierung: Long = grün, Short = rot, Neutral = transparent
-        current_phase = positions.iloc[0]
-        start_idx = dates[0]
-        for i in range(1, len(dates)):
-            if positions.iloc[i] != current_phase:
-                end_idx = dates[i - 1]
-                if current_phase == 1:
-                    ax_trades.axvspan(start_idx, end_idx, color='green', alpha=0.2)
-                elif current_phase == -1:
-                    ax_trades.axvspan(start_idx, end_idx, color='red', alpha=0.2)
-                current_phase = positions.iloc[i]
-                start_idx = dates[i]
-        # Letzte Phase bis zum Ende
-        if current_phase == 1:
-            ax_trades.axvspan(start_idx, dates[-1], color='green', alpha=0.2)
-        elif current_phase == -1:
-            ax_trades.axvspan(start_idx, dates[-1], color='red', alpha=0.2)
-
-        ax_trades.set_title(f"{ticker_input}-Kurs mit Kauf-/Verkaufsphasen", fontsize=14)
-        ax_trades.set_xlabel("Datum", fontsize=12)
-        ax_trades.set_ylabel("Preis", fontsize=12)
-        ax_trades.grid(True, linestyle='--', alpha=0.4)
-        st.pyplot(fig_trades)
-
-        st.markdown("""
-        - **Grüne Bereiche**: Long-Phase (Kaufsignal aktiv).  
-        - **Rote Bereiche**: Short-Phase (Verkaufssignal aktiv).  
-        - **Ohne Schattierung**: Neutral (keine offene Position).
-        """)
-
-        # ---------------------------------------
-        # 3. Tabelle der Einzeltrades
-        # ---------------------------------------
-        st.subheader("3. Tabelle der Einzeltrades")
-        trades_table = trades_df[['Datum', 'Typ', 'Kurs', 'Profit/Loss', 'Kumulative P&L']].copy()
-        trades_table['Datum'] = trades_table['Datum'].dt.strftime('%Y-%m-%d')
-        trades_table['Kurs'] = trades_table['Kurs'].map('{:.2f}'.format)
-        trades_table['Profit/Loss'] = trades_table['Profit/Loss'].map(lambda x: f"{x:.2f}" if pd.notnull(x) else "-")
-        trades_table['Kumulative P&L'] = trades_table['Kumulative P&L'].map('{:.2f}'.format)
-        st.dataframe(trades_table, use_container_width=True)
-
-        # ---------------------------------------
-        # 4. Handelsstatistiken
-        # ---------------------------------------
-        st.subheader("4. Handelsstatistiken")
-
-        # Layout: drei Spalten
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.metric("Gesamtzahl der Einträge (Entry+Exit)", total_trades)
-            st.metric("Davon Long-Trades (Entry-Zeilen)", long_trades)
-            st.metric("Davon Short-Trades (Entry-Zeilen)", short_trades)
-
-        with col2:
-            st.metric("Positive Trades (Anzahl)", pos_count)
-            st.metric("Negative Trades (Anzahl)", neg_count)
-            st.metric("Positive Trades (%)", f"{pos_pct:.2f}%")
-
-        with col3:
-            # Neue Kennzahlen: Strategie‐Performance vs. Buy-&-Hold
-            st.metric("Strategie-Return", f"{strategy_return:.2f}%")
-            st.metric("Buy-&-Hold-Return", f"{buy_and_hold_return:.2f}%")
-            # Zusatz: Differenz oder Out-/Underperformance
-            diff = strategy_return - buy_and_hold_return
-            if diff >= 0:
-                sign = "+"
-            else:
-                sign = ""
-            st.metric("Outperformance vs. B&H", f"{sign}{diff:.2f}%")
-
-        # Bullet‐Points mit P&L‐Summen und Performances pro Trade-Typ
-        st.markdown(f"""
-        - **Negative Trades (%)**: {neg_pct:.2f}%  
-        - **Gesamt-P&L der positiven Trades**: {pos_pnl:.2f} EUR  
-        - **Gesamt-P&L der negativen Trades**: {neg_pnl:.2f} EUR  
-        - **Gesamt-P&L des Systems**: {total_pnl:.2f} EUR  
-        - **Performance positive Trades**: {pos_perf:.2f}%  
-        - **Performance negative Trades**: {neg_perf:.2f}%  
-        """)
-
-        # Professioneller Vergleichstext
-        st.markdown("""
-        ---
-        **Vergleich Modell-Performance vs. Buy-&-Hold**  
-        - Das Handelssystem erzielte in diesem Zeitraum eine Gesamt-Rendite von **{strategy_return:.2f}%**,  
-          während die Buy-&-Hold-Strategie nur **{buy_and_hold_return:.2f}%** erwirtschaftete.  
-        - Dies entspricht einer **Outperformance von {diff:+.2f}%** gegenüber dem reinen Halten der Aktie.  
-        - Insbesondere in Seitwärts- oder Trendwechsel-Phasen profitiert das System von den Long/Short-Signalen, wodurch Drawdowns verkürzt und Gewinne im Gegentrend mitgenommen werden.  
-        - Die Buy-&-Hold-Strategie erzielt zwar in starken Hausse-Phasen gute Renditen, kann in volatilen Fällen aber größere Verluste hinnehmen, da sie nicht zwischen Long und Short unterscheidet.  
-        - Insgesamt zeigt sich, dass das optimierte System in diesem historischen Verlauf robuster ist und sowohl positive Trades als auch aktive Short-Positionen gewinnbringend nutzt.  
-        
-        >Dementsprechend kann eine Kombination aus Trend-Following-Signalen und einem passiven Buy-&-Hold-Ansatz das Risiko/Rendite-Profil eines reinen Aktienengagements deutlich verbessern.  
-        """.format(
-            strategy_return=strategy_return,
-            buy_and_hold_return=buy_and_hold_return,
-            diff=diff
-        ))
-
-        # ---------------------------------------
-        # 5. Balkendiagramm: Anzahl der Trades
-        # ---------------------------------------
-        st.subheader("5. Anzahl der Trades (Entry+Exit, Long, Short)")
-        fig_counts, ax_counts = plt.subplots(figsize=(6, 4))
-        ax_counts.bar(
-            ['Einträge gesamt', 'Long-Einträge', 'Short-Einträge'],
-            [total_trades, long_trades, short_trades],
-            color=['#4c72b0', '#55a868', '#c44e52'],
-            alpha=0.8
+    # Prozentwerte über die Balken schreiben
+    for bar in bars:
+        height = bar.get_height()
+        ax_perf.text(
+            bar.get_x() + bar.get_width() / 2,  # x-Position in der Mitte des Balkens
+            height,                              # y-Position genau auf dem Balken
+            f"{height:.2f}%",                    # Beschriftung
+            ha='center',                         # horizontal zentriert
+            va='bottom'                          # vertikal direkt über dem Balken
         )
-        ax_counts.set_ylabel("Anzahl", fontsize=12)
-        ax_counts.set_title("Trade-Einträge-Verteilung", fontsize=14)
-        ax_counts.grid(axis='y', linestyle='--', alpha=0.5)
-        st.pyplot(fig_counts)
+
+    ax_perf.set_ylabel("Rendite (%)", fontsize=12)
+    ax_perf.set_title(f"Strategie vs. Buy-&-Hold für {ticker_input}", fontsize=14)
+    ax_perf.grid(axis='y', linestyle='--', alpha=0.5)
+    st.pyplot(fig_performance)
+
+    # ---------------------------------------
+    # 2. Kursdiagramm mit Kauf-/Verkaufsphasen
+    # ---------------------------------------
+    st.subheader("2. Kursdiagramm mit Phasen (Kauf/Verkauf)")
+
+    fig_trades, ax_trades = plt.subplots(figsize=(10, 5))
+    dates = df_plot.index
+    prices = df_plot['Close']
+    positions = df_plot['Position']
+
+    ax_trades.plot(dates, prices, label='Close-Preis', color='black', linewidth=1)
+
+    # Phasenschattierung: Long = grün, Short = rot, Neutral = transparent
+    current_phase = positions.iloc[0]
+    start_idx = dates[0]
+    for i in range(1, len(dates)):
+        if positions.iloc[i] != current_phase:
+            end_idx = dates[i - 1]
+            if current_phase == 1:
+                ax_trades.axvspan(start_idx, end_idx, color='green', alpha=0.2)
+            elif current_phase == -1:
+                ax_trades.axvspan(start_idx, end_idx, color='red', alpha=0.2)
+            current_phase = positions.iloc[i]
+            start_idx = dates[i]
+    # Letzte Phase bis zum Ende
+    if current_phase == 1:
+        ax_trades.axvspan(start_idx, dates[-1], color='green', alpha=0.2)
+    elif current_phase == -1:
+        ax_trades.axvspan(start_idx, dates[-1], color='red', alpha=0.2)
+
+    ax_trades.set_title(f"{ticker_input}-Kurs mit Kauf-/Verkaufsphasen", fontsize=14)
+    ax_trades.set_xlabel("Datum", fontsize=12)
+    ax_trades.set_ylabel("Preis", fontsize=12)
+    ax_trades.grid(True, linestyle='--', alpha=0.4)
+    st.pyplot(fig_trades)
+
+    st.markdown("""
+    - **Grüne Bereiche**: Long-Phase (Kaufsignal aktiv).  
+    - **Rote Bereiche**: Short-Phase (Verkaufssignal aktiv).  
+    - **Ohne Schattierung**: Neutral (keine offene Position).
+    """)
+
+    # ---------------------------------------
+    # 3. Tabelle der Einzeltrades
+    # ---------------------------------------
+    st.subheader("3. Tabelle der Einzeltrades")
+    trades_table = trades_df[['Datum', 'Typ', 'Kurs', 'Profit/Loss', 'Kumulative P&L']].copy()
+    trades_table['Datum'] = trades_table['Datum'].dt.strftime('%Y-%m-%d')
+    trades_table['Kurs'] = trades_table['Kurs'].map('{:.2f}'.format)
+    trades_table['Profit/Loss'] = trades_table['Profit/Loss'].map(lambda x: f"{x:.2f}" if pd.notnull(x) else "-")
+    trades_table['Kumulative P&L'] = trades_table['Kumulative P&L'].map('{:.2f}'.format)
+    st.dataframe(trades_table, use_container_width=True)
+
+    # ---------------------------------------
+    # 4. Handelsstatistiken
+    # ---------------------------------------
+    st.subheader("4. Handelsstatistiken")
+
+    # Layout: drei Spalten
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Gesamtzahl der Einträge (Entry+Exit)", total_trades)
+        st.metric("Davon Long-Trades (Entry-Zeilen)", long_trades)
+        st.metric("Davon Short-Trades (Entry-Zeilen)", short_trades)
+
+    with col2:
+        st.metric("Positive Trades (Anzahl)", pos_count)
+        st.metric("Negative Trades (Anzahl)", neg_count)
+        st.metric("Positive Trades (%)", f"{pos_pct:.2f}%")
+
+    with col3:
+        # Neue Kennzahlen: Strategie‐Performance vs. Buy-&-Hold
+        st.metric("Strategie-Return", f"{strategy_return:.2f}%")
+        st.metric("Buy-&-Hold-Return", f"{buy_and_hold_return:.2f}%")
+        # Zusatz: Differenz oder Out-/Underperformance
+        diff = strategy_return - buy_and_hold_return
+        if diff >= 0:
+            sign = "+"
+        else:
+            sign = ""
+        st.metric("Outperformance vs. B&H", f"{sign}{diff:.2f}%")
+
+    # Bullet‐Points mit P&L‐Summen und Performances pro Trade-Typ
+    st.markdown(f"""
+    - **Negative Trades (%)**: {neg_pct:.2f}%  
+    - **Gesamt-P&L der positiven Trades**: {pos_pnl:.2f} EUR  
+    - **Gesamt-P&L der negativen Trades**: {neg_pnl:.2f} EUR  
+    - **Gesamt-P&L des Systems**: {total_pnl:.2f} EUR  
+    - **Performance positive Trades**: {pos_perf:.2f}%  
+    - **Performance negative Trades**: {neg_perf:.2f}%  
+    """)
+
+    # Professioneller Vergleichstext
+    st.markdown("""
+    ---
+    **Vergleich Modell-Performance vs. Buy-&-Hold**  
+    - Das Handelssystem erzielte in diesem Zeitraum eine Gesamt-Rendite von **{strategy_return:.2f}%**,  
+      während die Buy-&-Hold-Strategie nur **{buy_and_hold_return:.2f}%** erwirtschaftete.  
+    - Dies entspricht einer **Outperformance von {diff:+.2f}%** gegenüber dem reinen Halten der Aktie.  
+    - Insbesondere in Seitwärts- oder Trendwechsel-Phasen profitiert das System von den Long/Short-Signalen, wodurch Drawdowns verkürzt und Gewinne im Gegentrend mitgenommen werden.  
+    - Die Buy-&-Hold-Strategie erzielt zwar in starken Hausse-Phasen gute Renditen, kann in volatilen Fällen aber größere Verluste hinnehmen, da sie nicht zwischen Long und Short unterscheidet.  
+    - Insgesamt zeigt sich, dass das optimierte System in diesem historischen Verlauf robuster ist und sowohl positive Trades als auch aktive Short-Positionen gewinnbringend nutzt.  
+        
+    >Dementsprechend kann eine Kombination aus Trend-Following-Signalen und einem passiven Buy-&-Hold-Ansatz das Risiko/Rendite-Profil eines reinen Aktienengagements deutlich verbessern.  
+    """.format(
+        strategy_return=strategy_return,
+        buy_and_hold_return=buy_and_hold_return,
+        diff=diff
+    ))
+
+    # ---------------------------------------
+    # 5. Balkendiagramm: Anzahl der Trades
+    # ---------------------------------------
+    st.subheader("5. Anzahl der Trades (Entry+Exit, Long, Short)")
+    fig_counts, ax_counts = plt.subplots(figsize=(6, 4))
+    ax_counts.bar(
+        ['Einträge gesamt', 'Long-Einträge', 'Short-Einträge'],
+        [total_trades, long_trades, short_trades],
+        color=['#4c72b0', '#55a868', '#c44e52'],
+        alpha=0.8
+    )
+    ax_counts.set_ylabel("Anzahl", fontsize=12)
+    ax_counts.set_title("Trade-Einträge-Verteilung", fontsize=14)
+    ax_counts.grid(axis='y', linestyle='--', alpha=0.5)
+    st.pyplot(fig_counts)
 
         
-        # -------------------------------------------------------------------
-        # Kombiniertes Chart: Aktienkurs, Wealth Performance und Phasen
-        # -------------------------------------------------------------------
+    # -------------------------------------------------------------------
+    # Kombiniertes Chart: Aktienkurs, Wealth Performance und Phasen
+    # -------------------------------------------------------------------
         
-        st.subheader("6. Price & Wealth Performance: Phases")
+    st.subheader("6. Price & Wealth Performance: Phases")
         
-        # Erstelle das Figure‐Objekt und zwei Achsen (linke Achse für den Kurs, rechte Achse für Wealth)
-        fig_combined, ax_price = plt.subplots(figsize=(10, 6))
+    # Erstelle das Figure‐Objekt und zwei Achsen (linke Achse für den Kurs, rechte Achse für Wealth)
+    fig_combined, ax_price = plt.subplots(figsize=(10, 6))
         
-        # Die zweite Y‐Achse (rechts) teilen
-        ax_wealth = ax_price.twinx()
+    # Die zweite Y‐Achse (rechts) teilen
+    ax_wealth = ax_price.twinx()
         
-        # X‐Werte (Datum) holen
-        dates_price = df_plot.index            # Index von df_plot (DatetimeIndex)
-        dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex)
+    # X‐Werte (Datum) holen
+    dates_price = df_plot.index            # Index von df_plot (DatetimeIndex)
+    dates_wealth = df_wealth["Datum"]      # Datumsspalte von df_wealth (DatetimeIndex")
         
-        # 1. Aktienkurs (linke Achse, schwarz)
-        ax_price.plot(
-            dates_price,
-            df_plot["Close"],
-            label="Schlusskurs",
-            color="#000000",
-            linewidth=1.0,
-            alpha=0.5
+    # 1. Aktienkurs (linke Achse, schwarz)
+    ax_price.plot(
+        dates_price,
+        df_plot["Close"],
+        label="Schlusskurs",
+        color="#000000",
+        linewidth=1.0,
+        alpha=0.5
+    )
+        
+    # 2. Wealth Performance (rechte Achse, grün)
+    ax_wealth.plot(
+        dates_wealth,
+        df_wealth["Wealth"],
+        label="Wealth Performance",
+        color="#2ca02c",
+        linewidth=1.3,
+        alpha=0.8
+    )
+        
+    # 3. Phasen‐Shading über den Kurs‐Plot legen
+    #    Wir lesen die Positionen aus df_plot: 1=Long, -1=Short, 0=Neutral
+    positions = df_plot["Position"].values
+        
+    # Wir gehen das Datum‐Array durch und schattieren, sobald sich die Position ändert
+    current_phase = positions[0]
+    phase_start = dates_price[0]
+        
+    for i in range(1, len(dates_price)):
+        if positions[i] != current_phase:
+            phase_end = dates_price[i - 1]
+            if current_phase == 1:
+                ax_price.axvspan(phase_start, phase_end, color="green", alpha=0.15)
+            elif current_phase == -1:
+                ax_price.axvspan(phase_start, phase_end, color="red", alpha=0.15)
+            # Neue Phase starten
+            current_phase = positions[i]
+            phase_start = dates_price[i]
+        
+    # Letzte Phase bis zum Ende
+    if current_phase == 1:
+        ax_price.axvspan(phase_start, dates_price[-1], color="green", alpha=0.15)
+    elif current_phase == -1:
+        ax_price.axvspan(phase_start, dates_price[-1], color="red", alpha=0.15)
+        
+    # 4. Achsen‐Beschriftungen, Legende, Titel, Grid
+    ax_price.set_xlabel("Datum", fontsize=12, weight="normal")
+    ax_price.set_ylabel("Schlusskurs", fontsize=12, color="#000000", weight="normal")
+    ax_wealth.set_ylabel("Wealth (€)", fontsize=12, color="#2ca02c", weight="normal")
+        
+    ax_price.tick_params(axis="y", labelcolor="#000000")
+    ax_wealth.tick_params(axis="y", labelcolor="#2ca02c")
+        
+    # Gemeinsame Legende: Wir kombinieren die Handles beider Achsen
+    lines_price, labels_price = ax_price.get_legend_handles_labels()
+    lines_wealth, labels_wealth = ax_wealth.get_legend_handles_labels()
+    all_lines = lines_price + lines_wealth
+    all_labels = labels_price + labels_wealth
+        
+    ax_price.legend(all_lines, all_labels, loc="upper left", frameon=True, fontsize=10)
+        
+    # Leichtes Grid im Hintergrund
+    ax_price.grid(True, linestyle="--", alpha=0.4)
+        
+    # Professioneller Titel
+    ax_price.set_title(
+        f"{ticker_input}: Price & Wealth Performance incl. Phases",
+        fontsize=14,
+        weight="normal"
+    )
+        
+    # X‐Achse optisch enger machen
+    fig_combined.autofmt_xdate(rotation=0)
+        
+    # Plot in Streamlit einbinden
+    st.pyplot(fig_combined)
+
+    # ---------------------------------------
+    # 7. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
+    # ---------------------------------------
+    st.subheader("7. Normalized Price vs. Wealth Index")
+        
+    # 1. Gemeinsames Startdatum (erster Eintrag in df_plot)
+    start_date = df_plot.index[0]
+        
+    # 2. Wealth so zuschneiden, dass es ab genau diesem Datum beginnt
+    df_wealth_synced = df_wealth[df_wealth["Datum"] >= start_date].copy()
+    df_wealth_synced.set_index("Datum", inplace=True)
+        
+    # 3. Reindexiere df_wealth_synced auf denselben Index wie df_plot.index, mit Forward‐Fill
+    df_wealth_reindexed = df_wealth_synced.reindex(df_plot.index, method="ffill")
+        
+    # 4. Normierung: beide Reihen auf 1 bringen (beide am selben Datum!)
+    price0  = df_plot["Close"].iloc[0]
+    wealth0 = df_wealth_reindexed["Wealth"].iloc[0]
+        
+    df_plot["PriceNorm"]            = df_plot["Close"]        / price0
+    df_wealth_reindexed["WealthNorm"] = df_wealth_reindexed["Wealth"] / wealth0
+        
+    # 5. Plot beider Norm‐Zeitenreihen auf einer Achse
+    fig_single, ax = plt.subplots(figsize=(10, 6))
+        
+    dates = df_plot.index
+        
+    # a) Normierter Kurs (schwarz Linie)
+    ax.plot(
+        dates,
+        df_plot["PriceNorm"],
+        label="Normierter Kurs",
+        color="#000000",
+        linewidth=1.0,
+        alpha=0.5
+    )
+        
+    # b) Normierte Wealth (grün Linie)
+    ax.plot(
+        dates,
+        df_wealth_reindexed["WealthNorm"],
+        label="Normierte Wealth",
+        color="#2ca02c",
+        linewidth=1.5,
+        alpha=0.8
+    )
+        
+    # c) Phasen‐Shading (Long = grün, Short = rot)
+    positions = df_plot["Position"].values
+    current_phase = positions[0]
+    phase_start = dates[0]
+    for i in range(1, len(dates)):
+        if positions[i] != current_phase:
+            phase_end = dates[i - 1]
+            if current_phase == 1:
+                ax.axvspan(phase_start, phase_end, color="green", alpha=0.10)
+            elif current_phase == -1:
+                ax.axvspan(phase_start, phase_end, color="red", alpha=0.10)
+            current_phase = positions[i]
+            phase_start = dates[i]
+        
+    # Letzte Phase bis zum Ende
+    if current_phase == 1:
+        ax.axvspan(phase_start, dates[-1], color="green", alpha=0.10)
+    elif current_phase == -1:
+        ax.axvspan(phase_start, dates[-1], color="red", alpha=0.10)
+        
+    # d) Achsen‐Beschriftungen und Legende
+    ax.set_xlabel("Datum", fontsize=12, weight="normal")
+    ax.set_ylabel("Normierter Wert (t₀ → 1)", fontsize=12, weight="normal")
+        
+    ax.legend(loc="upper left", frameon=True, fontsize=10)
+    ax.grid(True, linestyle="--", alpha=0.4)
+        
+    # e) Titel
+    ax.set_title(
+        f"{ticker_input}: Normalized Price vs. Wealth Index",
+        fontsize=14,
+        weight="normal"
+    )
+        
+    fig_single.autofmt_xdate(rotation=0)
+    st.pyplot(fig_single)
+
+
+    # ---------------------------------------
+    # 8. Passwort-Eingabe + Schaltfläche zum Bestätigen
+    # ---------------------------------------
+    st.markdown("---")
+    col_pw, col_btn = st.columns([3, 1])
+    with col_pw:
+        security_input = st.text_input(
+            label="🔒 Sicherheitscode eingeben, um MA-Werte abzurufen:",
+            type="password",
+            key="pw_field",
+            help="Nur der Entwickler kennt diesen Code."
         )
-        
-        # 2. Wealth Performance (rechte Achse, grün)
-        ax_wealth.plot(
-            dates_wealth,
-            df_wealth["Wealth"],
-            label="Wealth Performance",
-            color="#2ca02c",
-            linewidth=1.3,
-            alpha=0.8
-        )
-        
-        # 3. Phasen‐Shading über den Kurs‐Plot legen
-        #    Wir lesen die Positionen aus df_plot: 1=Long, -1=Short, 0=Neutral
-        positions = df_plot["Position"].values
-        
-        # Wir gehen das Datum‐Array durch und schattieren, sobald sich die Position ändert
-        current_phase = positions[0]
-        phase_start = dates_price[0]
-        
-        for i in range(1, len(dates_price)):
-            if positions[i] != current_phase:
-                phase_end = dates_price[i - 1]
-                if current_phase == 1:
-                    ax_price.axvspan(phase_start, phase_end, color="green", alpha=0.15)
-                elif current_phase == -1:
-                    ax_price.axvspan(phase_start, phase_end, color="red", alpha=0.15)
-                # Neue Phase starten
-                current_phase = positions[i]
-                phase_start = dates_price[i]
-        
-        # Letzte Phase bis zum Ende
-        if current_phase == 1:
-            ax_price.axvspan(phase_start, dates_price[-1], color="green", alpha=0.15)
-        elif current_phase == -1:
-            ax_price.axvspan(phase_start, dates_price[-1], color="red", alpha=0.15)
-        
-        # 4. Achsen‐Beschriftungen, Legende, Titel, Grid
-        ax_price.set_xlabel("Datum", fontsize=12, weight="normal")
-        ax_price.set_ylabel("Schlusskurs", fontsize=12, color="#000000", weight="normal")
-        ax_wealth.set_ylabel("Wealth (€)", fontsize=12, color="#2ca02c", weight="normal")
-        
-        ax_price.tick_params(axis="y", labelcolor="#000000")
-        ax_wealth.tick_params(axis="y", labelcolor="#2ca02c")
-        
-        # Gemeinsame Legende: Wir kombinieren die Handles beider Achsen
-        lines_price, labels_price = ax_price.get_legend_handles_labels()
-        lines_wealth, labels_wealth = ax_wealth.get_legend_handles_labels()
-        all_lines = lines_price + lines_wealth
-        all_labels = labels_price + labels_wealth
-        
-        ax_price.legend(all_lines, all_labels, loc="upper left", frameon=True, fontsize=10)
-        
-        # Leichtes Grid im Hintergrund
-        ax_price.grid(True, linestyle="--", alpha=0.4)
-        
-        # Professioneller Titel
-        ax_price.set_title(
-            f"{ticker_input}: Price & Wealth Performance incl. Phases",
-            fontsize=14,
-            weight="normal"
-        )
-        
-        # X‐Achse optisch enger machen
-        fig_combined.autofmt_xdate(rotation=0)
-        
-        # Plot in Streamlit einbinden
-        st.pyplot(fig_combined)
+    with col_btn:
+        submit_btn = st.button("🔓 Bestätigen", key="pw_button")
 
+    if submit_btn:
+        # 9. Passwort prüfen
+        if security_input == SECRET_CODE:
+            st.session_state["authenticated"] = True
+        else:
+            st.error("❌ Falscher Sicherheitscode.")
+            st.session_state["authenticated"] = False
 
-        # ---------------------------------------
-        # 7. Normiertes Single‐Axis‐Chart: Kurs & Wealth, beide ab 1 am selben Tag
-        # ---------------------------------------
-        st.subheader("7. Normalized Price vs. Wealth Index")
-        
-        # 1. Gemeinsames Startdatum (erster Eintrag in df_plot)
-        start_date = df_plot.index[0]
-        
-        # 2. Wealth so zuschneiden, dass es ab genau diesem Datum beginnt
-        df_wealth_synced = df_wealth[df_wealth["Datum"] >= start_date].copy()
-        df_wealth_synced.set_index("Datum", inplace=True)
-        
-        # 3. Reindexiere df_wealth_synced auf denselben Index wie df_plot.index, mit Forward‐Fill
-        df_wealth_reindexed = df_wealth_synced.reindex(df_plot.index, method="ffill")
-        
-        # 4. Normierung: beide Reihen auf 1 bringen (beide am selben Datum!)
-        price0  = df_plot["Close"].iloc[0]
-        wealth0 = df_wealth_reindexed["Wealth"].iloc[0]
-        
-        df_plot["PriceNorm"]            = df_plot["Close"]        / price0
-        df_wealth_reindexed["WealthNorm"] = df_wealth_reindexed["Wealth"] / wealth0
-        
-        # 5. Plot beider Norm‐Zeitenreihen auf einer Achse
-        fig_single, ax = plt.subplots(figsize=(10, 6))
-        
-        dates = df_plot.index
-        
-        # a) Normierter Kurs (schwarz Linie)
-        ax.plot(
-            dates,
-            df_plot["PriceNorm"],
-            label="Normierter Kurs",
-            color="#000000",
-            linewidth=1.0,
-            alpha=0.5
-        )
-        
-        # b) Normierte Wealth (grün Linie)
-        ax.plot(
-            dates,
-            df_wealth_reindexed["WealthNorm"],
-            label="Normierte Wealth",
-            color="#2ca02c",
-            linewidth=1.5,
-            alpha=0.8
-        )
-        
-        # c) Phasen‐Shading (Long = grün, Short = rot)
-        positions = df_plot["Position"].values
-        current_phase = positions[0]
-        phase_start = dates[0]
-        for i in range(1, len(dates)):
-            if positions[i] != current_phase:
-                phase_end = dates[i - 1]
-                if current_phase == 1:
-                    ax.axvspan(phase_start, phase_end, color="green", alpha=0.10)
-                elif current_phase == -1:
-                    ax.axvspan(phase_start, phase_end, color="red", alpha=0.10)
-                current_phase = positions[i]
-                phase_start = dates[i]
-        
-        # Letzte Phase bis zum Ende
-        if current_phase == 1:
-            ax.axvspan(phase_start, dates[-1], color="green", alpha=0.10)
-        elif current_phase == -1:
-            ax.axvspan(phase_start, dates[-1], color="red", alpha=0.10)
-        
-        # d) Achsen‐Beschriftungen und Legende
-        ax.set_xlabel("Datum", fontsize=12, weight="normal")
-        ax.set_ylabel("Normierter Wert (t₀ → 1)", fontsize=12, weight="normal")
-        
-        ax.legend(loc="upper left", frameon=True, fontsize=10)
-        ax.grid(True, linestyle="--", alpha=0.4)
-        
-        # e) Titel
-        ax.set_title(
-            f"{ticker_input}: Normalized Price vs. Wealth Index",
-            fontsize=14,
-            weight="normal"
-        )
-        
-        fig_single.autofmt_xdate(rotation=0)
-        st.pyplot(fig_single)
-
-
-        # ---------------------------------------
-        # 8. Sitzungszustand initialisieren für Authentifizierung
-        # ---------------------------------------
-        if 'authenticated' not in st.session_state:
-            st.session_state['authenticated'] = False
-
-        # ---------------------------------------
-        # 9. Passwort-Eingabe + Schaltfläche zum Bestätigen
-        # ---------------------------------------
-        st.markdown("---")
-        col_pw, col_btn = st.columns([3, 1])
-        with col_pw:
-            security_input = st.text_input(
-                label="🔒 Sicherheitscode eingeben, um MA-Werte abzurufen:",
-                type="password",
-                key="pw_field",
-                help="Nur der Entwickler kennt diesen Code."
-            )
-        with col_btn:
-            submit_btn = st.button("🔓 Bestätigen", key="pw_button")
-
-        if submit_btn:
-            if security_input == SECRET_CODE:
-                st.session_state['authenticated'] = True
-            else:
-                st.error("❌ Falscher Sicherheitscode.")
-                st.session_state['authenticated'] = False
-
-        # ---------------------------------------
-        # 10. MA-Werte nur anzeigen, wenn authentifiziert
-        # ---------------------------------------
-        if st.session_state['authenticated']:
-            st.info(f"✅ Optimale MA-Werte:\n\n"
-                    f"- Short MA: `{best_short}` Tage  \n"
-                    f"- Long MA: `{best_long}` Tage")
+    # 10. MA-Werte nur anzeigen, wenn authenticated == True
+    if st.session_state["authenticated"]:
+        st.info(f"✅ Optimale MA-Werte:\n\n"
+                f"- Short MA: `{best_short}` Tage  \n"
+                f"- Long MA: `{best_long}` Tage")
