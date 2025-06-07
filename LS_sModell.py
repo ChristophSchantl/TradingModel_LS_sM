@@ -530,7 +530,7 @@ if run_button:
         - Dies entspricht einer **Outperformance von {diff:+.2f}%** gegenüber dem reinen Halten der Aktie.  
         - Insbesondere in Seitwärts- oder Trendwechsel-Phasen profitiert das System von den Long/Short-Signalen, wodurch Drawdowns verkürzt und Gewinne im Gegentrend mitgenommen werden.  
         - Die Buy-&-Hold-Strategie erzielt zwar in starken Hausse-Phasen gute Renditen, kann in volatilen Fällen aber größere Verluste hinnehmen, da sie nicht zwischen Long und Short unterscheidet.  
-          
+        ---  
         """.format(
             strategy_return=strategy_return,
             buy_and_hold_return=buy_and_hold_return,
