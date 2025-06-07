@@ -12,7 +12,8 @@ warnings.filterwarnings("ignore")
 # ---------------------------------------
 # Funktion, die im Hintergrund Optimierung und Trading ausführt
 # ---------------------------------------
-@st.cache_data(show_spinner=False)
+
+# @st.cache_data(show_spinner=False)      #wenn man die Speicherfunktion haben möchte --> dann diese Zeile aktivieren
 def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     """
     Lädt Kursdaten für den gegebenen Ticker und Start-Datum (bis heute),
