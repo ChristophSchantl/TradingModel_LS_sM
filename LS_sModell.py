@@ -100,9 +100,37 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
     toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=5, indpb=0.2)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
+    # 3.1 Statistiken und Hall of Fame
+    stats = tools.Statistics(lambda ind: ind.fitness.values)
+    stats.register("min", np.min)
+    stats.register("avg", np.mean)
+    stats.register("max", np.max)
+    hof = tools.HallOfFame(1)
+
+    # 3.2 GA laufen lassen (zeichnet logbook und hof auf)
     population = toolbox.population(n=20)
-    algorithms.eaSimple(population, toolbox, cxpb=0.5, mutpb=0.2, ngen=10, verbose=False)
-    best = tools.selBest(population, k=1)[0]
+    population, logbook = algorithms.eaSimple(
+        population,
+        toolbox,
+        cxpb=0.5,
+        mutpb=0.2,
+        ngen=10,
+        stats=stats,
+        halloffame=hof,
+        verbose=False
+    )
+
+    # 3.3 Bestes Individuum
+    best = hof[0]
+
+    # … bestehende Runde der gerundeten Werte, Handelsmodell usw. …
+
+    # ganz am Ende von optimize_and_run:
+    return {
+        # … deine bisherigen Keys …,
+        "best_individual": best,
+        "logbook": logbook
+    }
 
     # 4. Gerundete MA-Werte
     best_short = int(round(best[0]))
@@ -736,3 +764,42 @@ if run_button:
         
         fig_single.autofmt_xdate(rotation=0)
         st.pyplot(fig_single)
+
+
+        # ───────────────────────────────────────────────────
+        # 🔧 Optimierungsergebnisse (neu)
+        st.markdown("---")
+        st.subheader("🔧 Optimierungsergebnisse")
+        
+        # Metriken für die optimalen MAs
+        best_short, best_long = results["best_individual"]
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.metric("✨ MA kurz (optimal)", best_short)
+        with col_b:
+            st.metric("✨ MA lang (optimal)", best_long)
+        
+        # Fitness-Verlauf über die Generationen
+        logbook = results["logbook"]
+        df_log = pd.DataFrame(logbook)
+        
+        fig_opt, ax_opt = plt.subplots(figsize=(8, 4))
+        ax_opt.plot(df_log["gen"], df_log["max"],    label="Max Sharpe", linewidth=2)
+        ax_opt.plot(df_log["gen"], df_log["avg"],    label="Avg Sharpe", linewidth=1.5)
+        ax_opt.fill_between(df_log["gen"], df_log["min"], df_log["max"], alpha=0.2)
+        ax_opt.set_xlabel("Generation", fontsize=11)
+        ax_opt.set_ylabel("Sharpe Ratio", fontsize=11)
+        ax_opt.set_title("Optimierungsverlauf (Sharpe Ratio)", fontsize=13)
+        ax_opt.grid(True, linestyle="--", alpha=0.4)
+        ax_opt.legend(frameon=True, fontsize=10)
+        st.pyplot(fig_opt)
+
+
+
+
+
+
+
+
+
+
