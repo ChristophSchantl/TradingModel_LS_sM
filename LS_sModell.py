@@ -530,9 +530,7 @@ if run_button:
         - Dies entspricht einer **Outperformance von {diff:+.2f}%** gegenüber dem reinen Halten der Aktie.  
         - Insbesondere in Seitwärts- oder Trendwechsel-Phasen profitiert das System von den Long/Short-Signalen, wodurch Drawdowns verkürzt und Gewinne im Gegentrend mitgenommen werden.  
         - Die Buy-&-Hold-Strategie erzielt zwar in starken Hausse-Phasen gute Renditen, kann in volatilen Fällen aber größere Verluste hinnehmen, da sie nicht zwischen Long und Short unterscheidet.  
-        - Insgesamt zeigt sich, dass das optimierte System in diesem historischen Verlauf robuster ist und sowohl positive Trades als auch aktive Short-Positionen gewinnbringend nutzt.  
-        
-        >Dementsprechend kann eine Kombination aus Trend-Following-Signalen und einem passiven Buy-&-Hold-Ansatz das Risiko/Rendite-Profil eines reinen Aktienengagements deutlich verbessern.  
+          
         """.format(
             strategy_return=strategy_return,
             buy_and_hold_return=buy_and_hold_return,
