@@ -351,7 +351,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         "pos_perf": pos_perf,
         "neg_perf": neg_perf,
         "df_plot": df_plot,
-        "df_wealth": df_wealth
+        "df_wealth": df_wealth,
         # **neu**:
         "best_individual": best,
         "logbook": logbook
