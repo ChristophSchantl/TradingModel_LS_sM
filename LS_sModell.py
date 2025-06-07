@@ -339,8 +339,8 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         "strategy_return": float(strategy_return),
         "buy_and_hold_return": float(buy_and_hold_return),
         "total_trades": total_trades,
-        "long_trades": …,
-        "short_trades": …,
+        "long_trades": len(trades_df[trades_df['Typ'].str.contains("Kauf")]),
+        "short_trades": len(trades_df[trades_df['Typ'].str.contains("Short")]),
         "pos_count": pos_count,
         "neg_count": neg_count,
         "pos_pct": pos_pct,
@@ -351,11 +351,12 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
         "pos_perf": pos_perf,
         "neg_perf": neg_perf,
         "df_plot": df_plot,
-        "df_wealth": df_wealth,
+        "df_wealth": df_wealth
         # **neu**:
         "best_individual": best,
         "logbook": logbook
     }
+
 
 
 
