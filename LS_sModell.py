@@ -397,6 +397,11 @@ start_capital_input = st.number_input(
 st.markdown("---")
 
 
+# -------------
+# Button zum Starten der Berechnung
+# -------------
+run_button = st.button("🔄 Ergebnisse berechnen")
+
 
 
 
@@ -431,10 +436,7 @@ if not run_button:
 
 
 
-# -------------
-# Button zum Starten der Berechnung
-# -------------
-run_button = st.button("🔄 Ergebnisse berechnen")
+
 
 # nur wenn der Button gedrückt wurde und ein Ticker eingegeben ist:
 if run_button:
