@@ -363,7 +363,7 @@ def optimize_and_run(ticker: str, start_date_str: str, start_capital: float):
 # ---------------------------------------
 # Streamlit-App
 # ---------------------------------------
-st.title("✨ AI Quant LS Model")
+st.title("✨ AI Quant Model")
 
 st.markdown("""
 Bitte wähle unten den Ticker (Yahoo Finance) , den Beginn des Zeitraums und das Startkapital aus.  
