@@ -383,6 +383,7 @@ start_date_input = st.date_input(
     value=date(2024, 1, 1),
     max_value=date.today(),
     help="Wähle das Startdatum (bis heute)."
+    placeholder="z.B. AAPL, MSFT, GOOG"
 )
 
 start_capital_input = st.number_input(
