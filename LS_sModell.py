@@ -415,7 +415,7 @@ if not run_button:
     
     **Das Modell liefert folgende Auswertungen:**
     
-    - 📊 **Performance-Vergleich**: Die modellbasierte Handelsstrategie wird der klassischen Buy-and-Hold-Strategie gegenübergestellt. Die Outperformance gegenüber der Benchmark (sofern vorhanden) wird sowohl absolut als auch prozentual ausgewiesen.
+    - 📊 **Performance-Vergleich**: Die modellbasierte Handelsstrategie wird der klassischen Buy-and-Hold-Strategie gegenübergestellt.
     
     - 🧭 **Kursdiagramm mit Signalmarkierungen**: Visualisiert werden Kauf- und Verkaufsphasen der Handelsstrategie über den Zeitverlauf hinweg.
     
