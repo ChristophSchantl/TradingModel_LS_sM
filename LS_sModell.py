@@ -375,7 +375,7 @@ Bitte wähle unten den Ticker (Yahoo Finance) , den Beginn des Zeitraums und das
 ticker_input = st.text_input(
     label="1️⃣ Welchen Aktien-Ticker möchtest du analysieren?",
     value="",  # leerer Standardwert
-    help='Gib hier das Tickersymbol ein, z.B. "AAPL", "MSFT"'
+    help='Gib hier das Tickersymbol ein, z.B. "AAPL", "MSFT"',
     placeholder="z.B. AAPL, MSFT, GOOG"
 )
 
