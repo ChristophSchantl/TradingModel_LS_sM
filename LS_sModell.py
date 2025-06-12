@@ -376,14 +376,14 @@ ticker_input = st.text_input(
     label="1️⃣ Welchen Aktien-Ticker möchtest du analysieren?",
     value="",  # leerer Standardwert
     help="Gib hier das Tickersymbol ein, z.B. 'AAPL', 'MSFT' oder 'O'."
+    placeholder="z.B. AAPL, MSFT, GOOG"
 )
 
 start_date_input = st.date_input(
     label="2️⃣ Beginn des Analyse-Zeitraums",
     value=date(2024, 1, 1),
     max_value=date.today(),
-    help="Wähle das Startdatum (bis heute).",
-    placeholder="z.B. AAPL, MSFT, GOOG"
+    help="Wähle das Startdatum (bis heute)."
 )
 
 start_capital_input = st.number_input(
