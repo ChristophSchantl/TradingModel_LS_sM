@@ -382,7 +382,7 @@ start_date_input = st.date_input(
     label="2️⃣ Beginn des Analyse-Zeitraums",
     value=date(2024, 1, 1),
     max_value=date.today(),
-    help="Wähle das Startdatum (bis heute)."
+    help="Wähle das Startdatum (bis heute).",
     placeholder="z.B. AAPL, MSFT, GOOG"
 )
 
